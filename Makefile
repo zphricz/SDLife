@@ -13,4 +13,4 @@ main.o: main.cpp
 	$(CXX) main.cpp -c $(CXXFLAGS) $(LDFLAGS) -omain.o
 
 clean:
-	rm -rf *.o run
+	rm -rf *.o life

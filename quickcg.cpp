@@ -253,7 +253,7 @@ void waitFrame(double oldTime, double frameDuration) //in seconds
         if(event.type == SDL_QUIT) end();
         inkeys = SDL_GetKeyState(NULL);
         if(inkeys[SDLK_ESCAPE]) end();
-        SDL_Delay(2); //so it consumes less processing power
+        SDL_Delay(5); //so it consumes less processing power
     }
 }
 

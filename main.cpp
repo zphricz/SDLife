@@ -5,18 +5,18 @@ using namespace QuickCG;
 
 struct cell
 {
-    char state;
-    char new_state;
+    unsigned char state;
+    unsigned char new_state;
 };
 
 static struct
 {
-    int red;
-    int green;
-    int blue;
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
 } color = {255, 0, 0};
 
-static const int rate = 10;
+static const int rate = 20;
 
 static enum {UP_GREEN,
              DOWN_RED,
@@ -33,7 +33,10 @@ int main(int argc, char* argv[])
     int cellsY;
     bool simulate = false;
     int single_step = 0;
-
+    float oldTime = getTime();
+    unsigned int * buffer;
+    cell * cells;
+    
     if (argc == 1)
     {
         cellsX = 1366;
@@ -66,14 +69,14 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    unsigned int buffer[screenWidth][screenHeight];
-    cell cells[cellsX][cellsY];
+    buffer = new unsigned int[screenWidth * screenHeight];
+    cells = new cell[cellsX * cellsY];
 
     for(int x = 0; x < cellsX; ++x)
     {
         for(int y = 0; y < cellsY; ++y)
         {
-            cells[x][y].state = rand() % 2;
+            cells[x * cellsY + y].state = rand() % 2;
         }
     }
 
@@ -82,11 +85,8 @@ int main(int argc, char* argv[])
     else
         screen(screenWidth, screenHeight, 0, "Life");
 
-    float oldTime = getTime();
     while (!done(true,  false)) // Loop until Esc is pressed
     {
-        waitFrame(oldTime, 1.0 / FPS);
-        oldTime = getTime();
         // Commit to buffer
         for(int x = 0; x < screenWidth; ++x)
         {
@@ -95,12 +95,18 @@ int main(int argc, char* argv[])
             {
                 int celly = y * cellsY / screenHeight;
                 unsigned int c = (color.red << 16) | (color.blue << 8) | color.green;
-                buffer[x][y] = c * cells[cellx][celly].state;
+                buffer[x * screenHeight + y] = c * cells[cellx * cellsY + celly].state;
             }
         }
 
+        // Sleep so that 60FPS is maintained
+        int delay = (int)(1000 * (1.0 / FPS - (getTime() - oldTime)));
+        if (delay > 0)
+            SDL_Delay(delay);
+        oldTime = getTime();
+
         // Draw buffer
-        drawBuffer(*buffer); // Update SDL pixel buffer
+        drawBuffer(buffer); // Update SDL pixel buffer
         redraw(); // Draw SDL pixel buffer
 
         if (simulate || single_step)
@@ -115,34 +121,34 @@ int main(int argc, char* argv[])
                     if (x - 1 >= 0) 
                     {
                         if (y - 1 >= 0)
-                            neighbors += cells[x-1][y-1].state;
-                        neighbors += cells[x-1][y].state;
+                            neighbors += cells[(x-1) * cellsY + y-1].state;
+                        neighbors += cells[(x-1) * cellsY + y].state;
                         if (y + 1 < cellsY)
-                            neighbors += cells[x-1][y+1].state;
+                            neighbors += cells[(x-1) * cellsY + y+1].state;
                     }
                     if (y - 1 >= 0)
-                        neighbors += cells[x][y-1].state;
+                        neighbors += cells[x * cellsY + y-1].state;
                     if (y + 1 < cellsY)
-                        neighbors += cells[x][y+1].state;
+                        neighbors += cells[x * cellsY + y+1].state;
                     if (x + 1 < cellsX)
                     {
                         if (y - 1 >= 0)
-                            neighbors += cells[x+1][y-1].state;
-                        neighbors += cells[x+1][y].state;
+                            neighbors += cells[(x+1) * cellsY + y-1].state;
+                        neighbors += cells[(x+1) * cellsY + y].state;
                         if (y + 1 < cellsY)
-                            neighbors += cells[x+1][y+1].state;
+                            neighbors += cells[(x+1) * cellsY + y+1].state;
                     }
 
                     switch (neighbors)
                     {
                         case 2:
-                            cells[x][y].new_state = cells[x][y].state;
+                            cells[x * cellsY + y].new_state = cells[x * cellsY + y].state;
                             break;
                         case 3:
-                            cells[x][y].new_state = 1;
+                            cells[x * cellsY + y].new_state = 1;
                             break;
                         default:
-                            cells[x][y].new_state = 0;
+                            cells[x * cellsY + y].new_state = 0;
                             break;
                     }
                 }
@@ -152,52 +158,58 @@ int main(int argc, char* argv[])
             switch (state)
             {
             case UP_GREEN:
-                color.green += rate;
-                if (color.green >= 255)
+                if ((int)color.green + rate >= 255)
                 {
                     color.green = 255;
                     state = DOWN_RED;
                 }
+                else
+                    color.green += rate;
                 break;
             case DOWN_RED:
-                color.red -= rate;
-                if (color.red <= 0)
+                if ((int) color.red - rate <= 0)
                 {
                     color.red = 0;
                     state = UP_BLUE;
                 }
+                else
+                    color.red -= rate;
                 break;
             case UP_BLUE:
-                color.blue += rate;
-                if (color.blue >= 255)
+                if ((int)color.blue + rate >= 255)
                 {
                     color.blue = 255;
                     state = DOWN_GREEN;
                 }
+                else
+                    color.blue += rate;
                 break;
             case DOWN_GREEN:
-                color.green -= rate;
-                if (color.green <= 0)
+                if ((int)color.green - rate <= 0)
                 {
                     color.green = 0;
                     state = UP_RED;
                 }
+                else
+                    color.green -= rate;
                 break;
             case UP_RED:
-                color.red += rate;
-                if (color.red >= 255)
+                if ((int)color.red + rate >= 255)
                 {
                     color.red = 255;
                     state = DOWN_BLUE;
                 }
+                else
+                    color.red += rate;
                 break;
             case DOWN_BLUE:
-                color.blue -= rate;
-                if (color.blue <= 0)
+                if ((int)color.blue - rate <= 0)
                 {
                     color.blue = 0;
                     state = UP_GREEN;
                 }
+                else
+                    color.blue -= rate;
                 break;
             }
 
@@ -206,7 +218,7 @@ int main(int argc, char* argv[])
             {
                 for(int y = 0; y < cellsY; ++y)
                 {
-                    cells[x][y].state = cells[x][y].new_state;
+                    cells[x * cellsY + y].state = cells[x * cellsY + y].new_state;
                 }
             }
         }
@@ -224,5 +236,7 @@ int main(int argc, char* argv[])
             }
         }
     }
+    delete [] buffer;
+    delete [] cells;
     return 0;
 }

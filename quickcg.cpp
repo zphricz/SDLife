@@ -97,7 +97,7 @@ bool keyPressed(int key) //this checks if the key is *just* pressed, returns tru
 //Set fullscreen to 0 for a window, or to 1 for fullscreen output
 //text is the caption or title of the window
 //also inits SDL
-void screen(int width, int height, bool fullscreen, const std::string& text)
+void screen(int width, int height, const std::string& text)
 {
     int colorDepth = 32;
     w = width;
@@ -110,7 +110,15 @@ void screen(int width, int height, bool fullscreen, const std::string& text)
         std::exit(1);
     }
     std::atexit(SDL_Quit);
-    if(fullscreen)
+    const SDL_VideoInfo * info = SDL_GetVideoInfo();
+    if (width < 0 || height < 0)
+    {
+        width = info->current_w;
+        height = info->current_h;
+        w = width;
+        h = height;
+    }
+    if (width == info->current_w && height == info->current_h)
     {
         scr = SDL_SetVideoMode(width, height, colorDepth, SDL_SWSURFACE | SDL_FULLSCREEN);
         lock();

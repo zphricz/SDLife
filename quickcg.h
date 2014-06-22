@@ -192,7 +192,7 @@ bool keyPressed(int key); //this checks if the key is *just* pressed, returns tr
 //BASIC SCREEN FUNCTIONS////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void screen(int width = 640, int height = 400, bool fullscreen = 0, const std::string& text = " ");
+void screen(int width = 640, int height = 400, const std::string& text = " ");
 void lock();
 void unlock();
 void redraw();

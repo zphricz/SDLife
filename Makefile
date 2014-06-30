@@ -1,5 +1,5 @@
 
-CXXFLAGS=-Ofast
+CXXFLAGS=-O3
 LDFLAGS=-lSDL
 CXX=g++
 

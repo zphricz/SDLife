@@ -92,12 +92,12 @@ static void change_color(int rate)
 
 static void init_cells(int num_cells_x, int num_cells_y, int permil)
 {
-    for(int x = 0; x < num_cells_x; ++x)
-    {
-        for(int y = 0; y < num_cells_y; ++y)
-        { 
-            if (permil > rand() % 1000) cells[x * num_cells_y + y].state = 1;
-            else cells[x * num_cells_y + y].state = 0;
+    for(int y = 0; y < num_cells_y; ++y)
+    { 
+        for(int x = 0; x < num_cells_x; ++x)
+        {
+            if (permil > rand() % 1000) cells[y * num_cells_x + x].state = 1;
+            else cells[y * num_cells_x + x].state = 0;
         }
     }
 }
@@ -158,8 +158,8 @@ int main(int argc, char* argv[])
     }
     if (num_cells_x < 0)
     {
-        num_cells_x = screen_width / 3;
-        num_cells_y = screen_height / 3;
+        num_cells_x = screen_width / 2;
+        num_cells_y = screen_height / 2;
     }
 
     cells = new cell[num_cells_x * num_cells_y];
@@ -169,13 +169,13 @@ int main(int argc, char* argv[])
     while (!done(true, false)) // Loop until Esc is pressed
     {
         // Commit to buffer
-        for(int x = 0; x < screen_width; ++x)
+        for(int y = 0; y < screen_height; ++y)
         {
-            int cell_x = x * num_cells_x / screen_width;
-            for(int y = 0; y < screen_height; ++y)
+            int cell_y = y * num_cells_y / screen_height;
+            for(int x = 0; x < screen_width; ++x)
             {
-                int cell_y = y * num_cells_y / screen_height;
-                if (cells[cell_x * num_cells_y + cell_y].state)
+                int cell_x = x * num_cells_x / screen_width;
+                if (cells[cell_y * num_cells_x + cell_x].state)
                 {
                     if (do_color)
                         pset(x, y, color);
@@ -204,44 +204,44 @@ int main(int argc, char* argv[])
             single_step = 0;
 
             // Determine new_state per cell
-            for(int x = 0; x < num_cells_x; ++x)
+            for(int y = 0; y < num_cells_y; ++y)
             {
-                for(int y = 0; y < num_cells_y; ++y)
+                for(int x = 0; x < num_cells_x; ++x)
                 {
                     int num_neighbors = 0;
                     
                     switch (boundary)
                     {
-                    case PACMAN:
-                        num_neighbors += cells[mod(x - 1, num_cells_x) * num_cells_y + mod(y - 1, num_cells_y)].state;
-                        num_neighbors += cells[mod(x - 1, num_cells_x) * num_cells_y + mod(y    , num_cells_y)].state;
-                        num_neighbors += cells[mod(x - 1, num_cells_x) * num_cells_y + mod(y + 1, num_cells_y)].state;
-                        num_neighbors += cells[mod(x    , num_cells_x) * num_cells_y + mod(y - 1, num_cells_y)].state;
-                        num_neighbors += cells[mod(x    , num_cells_x) * num_cells_y + mod(y + 1, num_cells_y)].state;
-                        num_neighbors += cells[mod(x + 1, num_cells_x) * num_cells_y + mod(y - 1, num_cells_y)].state;
-                        num_neighbors += cells[mod(x + 1, num_cells_x) * num_cells_y + mod(y    , num_cells_y)].state;
-                        num_neighbors += cells[mod(x + 1, num_cells_x) * num_cells_y + mod(y + 1, num_cells_y)].state;
+                    case PACMAN: // Causes noticeable performance hit
+                        num_neighbors += cells[mod(y - 1, num_cells_y) * num_cells_x + mod(x - 1, num_cells_x)].state;
+                        num_neighbors += cells[mod(y - 1, num_cells_y) * num_cells_x + mod(x    , num_cells_x)].state;
+                        num_neighbors += cells[mod(y - 1, num_cells_y) * num_cells_x + mod(x + 1, num_cells_x)].state;
+                        num_neighbors += cells[mod(y    , num_cells_y) * num_cells_x + mod(x - 1, num_cells_x)].state;
+                        num_neighbors += cells[mod(y    , num_cells_y) * num_cells_x + mod(x + 1, num_cells_x)].state;
+                        num_neighbors += cells[mod(y + 1, num_cells_y) * num_cells_x + mod(x - 1, num_cells_x)].state;
+                        num_neighbors += cells[mod(y + 1, num_cells_y) * num_cells_x + mod(x    , num_cells_x)].state;
+                        num_neighbors += cells[mod(y + 1, num_cells_y) * num_cells_x + mod(x + 1, num_cells_x)].state;
                         break;
                     case DEAD:
                         if (x - 1 >= 0) 
                         {
                             if (y - 1 >= 0)
-                                num_neighbors += cells[(x - 1) * num_cells_y + y - 1].state;
-                            num_neighbors += cells[(x - 1) * num_cells_y + y].state;
+                                num_neighbors += cells[(y - 1) * num_cells_x + x - 1].state;
+                            num_neighbors += cells[y * num_cells_x + x - 1].state;
                             if (y + 1 < num_cells_y)
-                                num_neighbors += cells[(x - 1) * num_cells_y + y + 1].state;
+                                num_neighbors += cells[(y + 1) * num_cells_x + x - 1].state;
                         }
                         if (y - 1 >= 0)
-                            num_neighbors += cells[x * num_cells_y + y - 1].state;
+                            num_neighbors += cells[(y - 1) * num_cells_x + x].state;
                         if (y + 1 < num_cells_y)
-                            num_neighbors += cells[x * num_cells_y + y + 1].state;
+                            num_neighbors += cells[(y + 1) * num_cells_x + x].state;
                         if (x + 1 < num_cells_x)
                         {
                             if (y - 1 >= 0)
-                                num_neighbors += cells[(x + 1) * num_cells_y + y - 1].state;
-                            num_neighbors += cells[(x + 1) * num_cells_y + y].state;
+                                num_neighbors += cells[(y - 1) * num_cells_x + x + 1].state;
+                            num_neighbors += cells[y * num_cells_x + x + 1].state;
                             if (y + 1 < num_cells_y)
-                                num_neighbors += cells[(x + 1) * num_cells_y + y + 1].state;
+                                num_neighbors += cells[(y + 1) * num_cells_x + x + 1].state;
                         }
                         break;
                     }
@@ -253,37 +253,37 @@ int main(int argc, char* argv[])
                         switch (num_neighbors)
                         {
                         case 2:
-                            cells[x * num_cells_y + y].new_state  = !cells[x * num_cells_y + y].state;
-                            break;
-                        default:
-                            cells[x * num_cells_y + y].new_state = 0;
-                            break;
-                        }
-                        break;
+                            cells[y * num_cells_x + x].new_state  = !cells[y * num_cells_x + x].state;
+                            break; 
+                        default:   
+                            cells[y * num_cells_x + x].new_state = 0;
+                            break;  
+                        }           
+                        break;     
 
                     case BLOTCHES:
                         switch (num_neighbors)
                         {
                         case 2:
-                            cells[x * num_cells_y + y].new_state  = rand() % 2;
-                            break;
-                        default:
-                            cells[x * num_cells_y + y].new_state  = cells[x * num_cells_y + y].state;
-                            break;
-                        }
-                        break;
+                            cells[y * num_cells_x + x].new_state  = rand() % 2;
+                            break; 
+                        default:   
+                            cells[y * num_cells_x + x].new_state  = cells[y * num_cells_x + x].state;
+                            break;  
+                        }           
+                        break;     
 
                     case DIAMONDS:
                         switch (num_neighbors)
                         {
                         case 2:
-                            cells[x * num_cells_y + y].new_state  = !cells[x * num_cells_y + y].state;
-                            break;
-                        default:
-                            cells[x * num_cells_y + y].new_state  = cells[x * num_cells_y + y].state;
-                            break;
-                        }
-                        break;
+                            cells[y * num_cells_x + x].new_state  = !cells[y * num_cells_x + x].state;
+                            break; 
+                        default:   
+                            cells[y * num_cells_x + x].new_state  = cells[y * num_cells_x + x].state;
+                            break;  
+                        }           
+                        break;     
 
                     case DAY_AND_NIGHT:
                         switch (num_neighbors)
@@ -292,13 +292,13 @@ int main(int argc, char* argv[])
                         case 6:
                         case 7:
                         case 8:
-                            cells[x * num_cells_y + y].new_state  = 1;
-                            break;
-                        case 4:
-                            cells[x * num_cells_y + y].new_state  = cells[x * num_cells_y + y].state;
-                            break;
-                        default:
-                            cells[x * num_cells_y + y].new_state = 0;
+                            cells[y * num_cells_x + x].new_state  = 1;
+                            break; 
+                        case 4:    
+                            cells[y * num_cells_x + x].new_state  = cells[y * num_cells_x + x].state;
+                            break; 
+                        default:   
+                            cells[y * num_cells_x + x].new_state = 0;
                             break;
                         }
                         break;
@@ -307,13 +307,13 @@ int main(int argc, char* argv[])
                         switch (num_neighbors)
                         {
                         case 2:
-                            cells[x * num_cells_y + y].new_state = cells[x * num_cells_y + y].state;
-                            break;
-                        case 3:
-                            cells[x * num_cells_y + y].new_state  = 1;
-                            break;
-                        default:
-                            cells[x * num_cells_y + y].new_state = 0;
+                            cells[y * num_cells_x + x].new_state = cells[y * num_cells_x + x].state;
+                            break; 
+                        case 3:    
+                            cells[y * num_cells_x + x].new_state  = 1;
+                            break; 
+                        default:   
+                            cells[y * num_cells_x + x].new_state = 0;
                             break;
                         }
                         break;
@@ -324,11 +324,11 @@ int main(int argc, char* argv[])
             change_color(2);
 
             // Commit new_state
-            for(int x = 0; x < num_cells_x; ++x)
+            for(int y = 0; y < num_cells_y; ++y)
             {
-                for(int y = 0; y < num_cells_y; ++y)
+                for(int x = 0; x < num_cells_x; ++x)
                 {
-                    cells[x * num_cells_y + y].state = cells[x * num_cells_y + y].new_state;
+                    cells[y * num_cells_x + x].state = cells[y * num_cells_x + x].new_state;
                 }
             }
         }

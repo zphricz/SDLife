@@ -1,0 +1,4 @@
+- Make default screen size determination more elegant
+- Do a better job at input (keyPressed() is causing a huge drop in performance)
+- Include mouse input to flip cell states
+- Parallelize code (determination of new cell states/rendering)

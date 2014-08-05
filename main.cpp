@@ -17,7 +17,7 @@ static const ColorRGB white(255, 255, 255);
 
 static enum {UP_GREEN,   DOWN_RED, UP_BLUE,
              DOWN_GREEN, UP_RED,   DOWN_BLUE} color_state = UP_GREEN;
-static enum {CONWAY, SEEDS, DIAMONDS, BLOTCHES, DAY_AND_NIGHT} game = CONWAY;
+static enum {CONWAY, SEEDS, DIAMONDS, BLOTCHES, DAY_AND_NIGHT} game = DAY_AND_NIGHT;
 static enum {PACMAN, DEAD} boundary = PACMAN;
 
 // Doesn't work for negative b
@@ -108,11 +108,13 @@ int main(int argc, char* argv[])
     int screen_height;
     int num_cells_x;
     int num_cells_y;
-    int single_step = 0;
+    bool step = false;
     bool simulate = false;
     bool do_color = true;
-    double old_time;
-    double time = getTicks();
+    unsigned int old_time;
+    unsigned int time;
+    unsigned int sleep_to;
+    unsigned int ms_diff = (unsigned int)(1000.0 / FPS);
 
     srand(getTime());
     
@@ -163,8 +165,9 @@ int main(int argc, char* argv[])
     }
 
     cells = new cell[num_cells_x * num_cells_y];
-
     init_cells(num_cells_x, num_cells_y, 500);
+    time = getTicks();
+    sleep_to = time + ms_diff;
 
     while (!done(true, false)) // Loop until Esc is pressed
     {
@@ -190,19 +193,23 @@ int main(int argc, char* argv[])
         // Sleep so that FPS is maintained
         old_time = time;
         time = getTicks();
-        int delay = (int)((1000.0 / FPS - (time - old_time)));
-        if (delay > 0)
-            SDL_Delay(delay);
+        if (sleep_to > time) 
+        {
+            SDL_Delay(sleep_to - time);
+            sleep_to += ms_diff;
+        }
+        else
+        {
+            sleep_to += ((time - sleep_to)/ms_diff + 1) * ms_diff;
+        }
 
         // Draw buffer
-        //double frameTime = (time - old_time) / 1000.0; //frameTime is the time this frame has taken, in seconds
-        //print(1.0 / frameTime); //FPS counter
+        double frameTime = ((double)(time - old_time)) / 1000.0; //frameTime is the time this frame has taken, in seconds
+        print(1.0 / frameTime); //FPS counter
         redraw(); // Draw SDL pixel buffer
 
-        if (simulate || single_step)
+        if (step)
         {
-            single_step = 0;
-
             // Determine new_state per cell
             for(int y = 0; y < num_cells_y; ++y)
             {
@@ -332,6 +339,7 @@ int main(int argc, char* argv[])
                 }
             }
         }
+        step = simulate;
 
         // Handle key presses
         if (keyPressed(SDLK_F1))
@@ -359,10 +367,7 @@ int main(int argc, char* argv[])
         if (keyPressed(SDLK_F12))
             simulate = !simulate;
         if (keyPressed(SDLK_SPACE))
-        {
-            if (!simulate)
-                single_step = 1;
-        }
+            step = true;
     }
     delete [] cells;
     return 0;

@@ -7,10 +7,10 @@ life: quickcg.o main.o
 	$(CXX) quickcg.o main.o $(CXXFLAGS) $(LDFLAGS) -olife
 
 quickcg.o: quickcg.cpp
-	$(CXX) quickcg.cpp -c $(CXXFLAGS) $(LDFLAGS) -oquickcg.o
+	$(CXX) quickcg.cpp -c $(CXXFLAGS) -oquickcg.o
 
 main.o: main.cpp
-	$(CXX) main.cpp -c $(CXXFLAGS) $(LDFLAGS) -omain.o
+	$(CXX) main.cpp -c $(CXXFLAGS) -omain.o
 
 clean:
 	rm -rf *.o life

@@ -37,6 +37,12 @@ You can interact with the project by pressing keys on your keyboard:
     F12: Pause/start simulation
     Space: Single-step simulation if paused
 
+You can also interact by using your mouse:
+
+    LMB: Make a cell alive
+    RMB: Make a cell dead
+    Both: Toggle a cell state
+
 Authors
 -------
 

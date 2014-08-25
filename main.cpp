@@ -108,8 +108,8 @@ int main(int argc, char* argv[])
     int screen_height;
     int num_cells_x;
     int num_cells_y;
-    int last_clicked_x = -1;
-    int last_clicked_y = -1;
+    int last_clicked_cell_x = -1;
+    int last_clicked_cell_y = -1;
     bool step = false;
     bool simulate = false;
     bool do_color = true;
@@ -349,22 +349,25 @@ int main(int argc, char* argv[])
         getMouseState(mouse_x, mouse_y, lmb, rmb);
         if (lmb || rmb)
         {
-            if (last_clicked_x != mouse_x && last_clicked_y != mouse_y)
+            int cell_y = mouse_y * num_cells_y / screen_height;
+            int cell_x = mouse_x * num_cells_x / screen_width;
+            if (!(last_clicked_cell_x == cell_x && last_clicked_cell_y == cell_y))
             {
-                int cell_y = mouse_y * num_cells_y / screen_height;
-                int cell_x = mouse_x * num_cells_x / screen_width;
-                if (lmb)
+                if (lmb && rmb)
+                    cells[cell_y * num_cells_x + cell_x].state = 
+                        !cells[cell_y * num_cells_x + cell_x].state;
+                else if (lmb)
                     cells[cell_y * num_cells_x + cell_x].state = 1;
                 else if (rmb)
                     cells[cell_y * num_cells_x + cell_x].state = 0;
             }
-            last_clicked_x = mouse_x;
-            last_clicked_y = mouse_y;
+            last_clicked_cell_x = cell_x;
+            last_clicked_cell_y = cell_y;
         }
         else
         {
-            last_clicked_x = -1;
-            last_clicked_y = -1;
+            last_clicked_cell_x = -1;
+            last_clicked_cell_y = -1;
         }
 
         // Handle key presses

@@ -41,7 +41,6 @@ You can also interact by using your mouse:
 
     LMB: Make a cell alive
     RMB: Make a cell dead
-    Both: Toggle a cell state
 
 Authors
 -------

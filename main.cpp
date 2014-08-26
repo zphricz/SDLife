@@ -162,8 +162,8 @@ int main(int argc, char* argv[])
     }
     if (num_cells_x < 0)
     {
-        num_cells_x = screen_width / 2;
-        num_cells_y = screen_height / 2;
+        num_cells_x = screen_width / 3;
+        num_cells_y = screen_height / 3;
     }
 
     cells = new cell[num_cells_x * num_cells_y];
@@ -206,8 +206,8 @@ int main(int argc, char* argv[])
         }
 
         // Draw buffer
-        double frameTime = ((double)(time - old_time)) / 1000.0; //frameTime is the time this frame has taken, in seconds
-        print(1.0 / frameTime); //FPS counter
+        // double frameTime = ((double)(time - old_time)) / 1000.0; //frameTime is the time this frame has taken, in seconds
+        // print(1.0 / frameTime); //FPS counter
         redraw(); // Draw SDL pixel buffer
 
         if (step)
@@ -395,6 +395,8 @@ int main(int argc, char* argv[])
             init_cells(num_cells_x, num_cells_y, 2);
         if (keyPressed(SDLK_F12))
             simulate = !simulate;
+        if (keyPressed(SDLK_DELETE))
+            init_cells(num_cells_x, num_cells_y, 0);
         if (keyPressed(SDLK_SPACE))
             step = true;
     }

@@ -44,7 +44,7 @@ QuickCG can handle some things that standard C++ doesn't but that are commonly u
 #include <cstdlib>
 #include <cmath>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <iostream>
 #include <fstream>
 
@@ -58,7 +58,7 @@ namespace QuickCG
 int w; //width of the screen
 int h; //height of the screen
 
-std::map<int, bool> keypressed; //for the "keyPressed" function to detect a keypress only once
+std::unordered_map<int, bool> keypressed; //for the "keyPressed" function to detect a keypress only once
 SDL_Surface* scr; //the single SDL surface used
 Uint8* inkeys;
 SDL_Event event = {0};
@@ -74,7 +74,7 @@ bool keyDown(int key) //this checks if the key is held down, returns true all th
 
 bool keyPressed(int key) //this checks if the key is *just* pressed, returns true only once until the key is up again
 {
-    if(keypressed.find(key) == keypressed.end()) keypressed[key] = false;
+    if(keypressed.count(key) == 0) keypressed[key] = false;
     if(inkeys[key])
     {
         if(keypressed[key] == false)

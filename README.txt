@@ -30,12 +30,13 @@ You can interact with the project by pressing keys on your keyboard:
     -------------
     F6: Flip drawing live cells in colors or in white
     F7: Move colors ahead somewhat
-    F8: Set boundary mode to pacman style
-    F9: Set boundary mode to dead-cell style
-    F10: Initialize cells with 50% alive
-    F11: initialize cells with 0.2% alive
+    F8: Switch boundary mode (PACMAN vs DEAD vs ALIVE)
+    F10: Initialize cells with all dead
+    F11: initialize cells with all alive
     F12: Pause/start simulation
     Space: Single-step simulation if paused
+    PgUp: Initialize cells with increasing percentage alive
+    PgDn: Initialize cells with decreasing percentage alive
 
 You can also interact by using your mouse:
 

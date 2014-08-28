@@ -18,7 +18,7 @@ static const ColorRGB white(255, 255, 255);
 static enum {UP_GREEN,   DOWN_RED, UP_BLUE,
              DOWN_GREEN, UP_RED,   DOWN_BLUE} color_state = UP_GREEN;
 static enum {CONWAY, SEEDS, DIAMONDS, BLOTCHES, DAY_AND_NIGHT} game = DAY_AND_NIGHT;
-static enum {PACMAN, DEAD} boundary = PACMAN;
+static enum {PACMAN, DEAD, ALIVE} boundary = PACMAN;
 
 // Doesn't work for negative b
 static int mod(int a, int b)
@@ -198,6 +198,41 @@ int main(int argc, char* argv[])
                                 num_neighbors += cells[(y + 1) * num_cells_x + x + 1].state;
                         }
                         break;
+                    case ALIVE:
+                        if (x - 1 >= 0) {
+                            if (y - 1 >= 0)
+                                num_neighbors += cells[(y - 1) * num_cells_x + x - 1].state;
+                            else
+                                num_neighbors++;
+                            num_neighbors += cells[y * num_cells_x + x - 1].state;
+                            if (y + 1 < num_cells_y)
+                                num_neighbors += cells[(y + 1) * num_cells_x + x - 1].state;
+                            else
+                                num_neighbors++;
+                        }
+                        else
+                            num_neighbors += 3;
+                        if (y - 1 >= 0)
+                            num_neighbors += cells[(y - 1) * num_cells_x + x].state;
+                        else
+                            num_neighbors++;
+                        if (y + 1 < num_cells_y)
+                            num_neighbors += cells[(y + 1) * num_cells_x + x].state;
+                        else
+                            num_neighbors++;
+                        if (x + 1 < num_cells_x) {
+                            if (y - 1 >= 0)
+                                num_neighbors += cells[(y - 1) * num_cells_x + x + 1].state;
+                            else
+                                num_neighbors++;
+                            num_neighbors += cells[y * num_cells_x + x + 1].state;
+                            if (y + 1 < num_cells_y)
+                                num_neighbors += cells[(y + 1) * num_cells_x + x + 1].state;
+                            else
+                                num_neighbors++;
+                        }
+                        else
+                            num_neighbors += 3;
                     }
 
                     // Game definitions
@@ -367,28 +402,17 @@ int main(int argc, char* argv[])
                 boundary = DEAD;
                 message = "DEAD BORDERS";
             }
-            else {
+            else if (boundary == DEAD) {
+                boundary = ALIVE;
+                message = "ALIVE BORDERS";
+            }
+            else if (boundary == ALIVE) {
                 boundary = PACMAN;
                 message = "PACMAN BORDERS";
             }
             end_print_time = getTicks() + 500;
         }
-        if (keyDown(SDLK_PAGEDOWN)) {
-            rand_percent = rand_percent == 0 ? 0 : rand_percent - 1;
-            init_cells(num_cells_x, num_cells_y, rand_percent);
-            end_print_time = getTicks() + 500;
-            std::ostringstream convert;
-            convert << rand_percent;
-            message = convert.str() + "%";
-        }
-        if (keyDown(SDLK_PAGEUP)) {
-            rand_percent = rand_percent == 100 ? 100 : rand_percent + 1;
-            init_cells(num_cells_x, num_cells_y, rand_percent);
-            end_print_time = getTicks() + 500;
-            std::ostringstream convert;
-            convert << rand_percent;
-            message = convert.str() + "%";
-        }
+        /* SDLK_F9 not accounted for */
         if (keyPressed(SDLK_F10)) {
             rand_percent = 0;
             init_cells(num_cells_x, num_cells_y, rand_percent);
@@ -412,6 +436,22 @@ int main(int argc, char* argv[])
             else
                 message = "STOP";
             end_print_time = getTicks() + 500;
+        }
+        if (keyDown(SDLK_PAGEDOWN)) {
+            rand_percent = rand_percent == 0 ? 0 : rand_percent - 1;
+            init_cells(num_cells_x, num_cells_y, rand_percent);
+            end_print_time = getTicks() + 500;
+            std::ostringstream convert;
+            convert << rand_percent;
+            message = convert.str() + "%";
+        }
+        if (keyDown(SDLK_PAGEUP)) {
+            rand_percent = rand_percent == 100 ? 100 : rand_percent + 1;
+            init_cells(num_cells_x, num_cells_y, rand_percent);
+            end_print_time = getTicks() + 500;
+            std::ostringstream convert;
+            convert << rand_percent;
+            message = convert.str() + "%";
         }
         if (keyPressed(SDLK_SPACE))
             step = true;

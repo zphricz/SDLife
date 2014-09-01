@@ -1,2 +1,2 @@
-- Make default screen size determination more elegant
+- Split main.cpp up into multiple files
 - Parallelize code (determination of new cell states/rendering)

@@ -114,45 +114,47 @@ int main(int argc, char* argv[])
     SDL_Event event = {0};
 
     srand(getTime());
-    
-    if (argc == 1) {
-        num_cells_x = -1;
-        num_cells_y = -1;
-        screen_width = -1;
-        screen_height = -1;
+
+    if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+        printf("Unable to init SDL: %s\n", SDL_GetError());
+        SDL_Quit();
+        std::exit(1);
     }
-    else if (argc == 3) {
+    std::atexit(SDL_Quit);
+    const SDL_VideoInfo * info = SDL_GetVideoInfo();
+    
+    switch (argc) {
+    case 1:
+        num_cells_x = info->current_w / 2;
+        num_cells_y = info->current_h / 2;
+        screen_width = info->current_w;
+        screen_height = info->current_h;
+        break;
+    case 3:
         num_cells_x = atoi(argv[1]);
         num_cells_y = atoi(argv[2]);
-        screen_width = -1;
-        screen_height = -1;
-    }
-    else if (argc == 5) {
+        screen_width = info->current_w;
+        screen_height = info->current_h;
+        break;
+    case 5:
         num_cells_x = atoi(argv[1]);
         num_cells_y = atoi(argv[2]);
         screen_width = atoi(argv[3]);
         screen_height = atoi(argv[4]);
-    }
-    else {
+        break;
+    default:
         printf("Usage: ./life [Board_x Board_y] [Screen_x Screen_y]\n");
         exit(1);
     }
-    if (num_cells_x == 0 || num_cells_y == 0 || screen_width == 0 || screen_height == 0) {
+    if (num_cells_x <= 0 || num_cells_y <= 0 || screen_width <= 0 || screen_height <= 0) {
         printf("Usage: ./life [Board_x Board_y] [Screen_x Screen_y]\n");
         exit(1);
     }
 
-    screen(screen_width, screen_height, "Life");
-
-    if (screen_width < 0) {
-        const SDL_VideoInfo * info = SDL_GetVideoInfo();
-        screen_width = info->current_w;
-        screen_height = info->current_h;
-    }
-    if (num_cells_x < 0) {
-        num_cells_x = screen_width / 2;
-        num_cells_y = screen_height / 2;
-    }
+    if (screen_width == info->current_w && screen_height == info->current_h)
+        screen(screen_width, screen_height, true, "Life");
+    else
+        screen(screen_width, screen_height, false, "Life");
 
     cells = new cell[num_cells_x * num_cells_y];
     init_cells(num_cells_x, num_cells_y, rand_percent);

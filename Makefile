@@ -8,7 +8,7 @@ CXX=g++-4.9
 # LDFLAGS=-lSDL
 # CXX=g++
 
-life: quickcg.o main.o Game.o
+life: quickcg.o main.o Game.o Screen.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o$@ $^
 
 #life: quickcg.o main.o Game.o

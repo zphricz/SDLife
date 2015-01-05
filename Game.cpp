@@ -1,66 +1,110 @@
-#include<stdlib.h>
+#include <stdlib.h>
+#include <iostream>
+#include <algorithm>
 #include "Game.h"
 
+using std::swap;
+using std::cout;
+using std::endl;
+
 // GAME DEFINITIONS
-bool Game::conway(int num_neighbors, bool last) {
+void Game::conway(int x, int y) {
+    int num_neighbors = moore_neighbors(x, y);
     switch (num_neighbors) {
     case 2:
-        return last;
+        next_cell_at(x, y) = cell_at(x, y);
+        break;
     case 3:    
-        return 1;
+        next_cell_at(x, y) = 1;
+        break;
     default:   
-        return 0;
+        next_cell_at(x, y) = 0;
+        break;
     }
 }
 
-bool Game::seeds(int num_neighbors, bool last) {
+void Game::seeds(int x, int y) {
+    int num_neighbors = moore_neighbors(x, y);
     switch (num_neighbors) {
     case 2:
-        return !last;
+        next_cell_at(x, y) = !cell_at(x, y);
+        break;
     default:   
-        return 0;
+        next_cell_at(x, y) = 0;
+        break;
     }
 }
 
-bool Game::blotches(int num_neighbors, bool last) {
+/*void Game::blotches(int x, int y) {
+    int num_neighbors = moore_neighbors(x, y);
     switch (num_neighbors) {
     case 2:
-        return rand() % 2;
+        next_cell_at(x, y) = rand() % 2;
+        break;
     default:   
-        return last;
+        next_cell_at(x, y) = cell_at(x, y);
+        break;
+    }
+}*/
+
+void Game::blotches(int x, int y) {
+    //int num_neighbors = moore_neighbors(x, y);
+    int num_neighbors = extended_neighbors(x, y, 2);
+    switch (num_neighbors) {
+    case 3:
+        next_cell_at(x, y) = cell_at(x, y) || (rand() % 100 < 50);
+        break;
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+        next_cell_at(x, y) = 1;
+        break;
+    default:   
+        next_cell_at(x, y) = cell_at(x, y);
+        break;
     }
 }
 
-bool Game::diamonds(int num_neighbors, bool last) {
+void Game::diamonds(int x, int y) {
+    int num_neighbors = moore_neighbors(x, y);
     switch (num_neighbors) {
     case 2:
-        return !last;
+        next_cell_at(x, y) = !cell_at(x, y);
+        break;
     default:   
-        return last;
+        next_cell_at(x, y) = cell_at(x, y);
+        break;
     }
 }
 
-bool Game::day_and_night(int num_neighbors, bool last) {
+void Game::day_and_night(int x, int y) {
+    int num_neighbors = moore_neighbors(x, y);
     switch (num_neighbors) {
     case 3:
     case 6:
     case 7:
     case 8:
-        return 1;
+        next_cell_at(x, y) = 1;
+        break;
     case 4:    
-        return last;
+        next_cell_at(x, y) = cell_at(x, y);
+        break;
     default:   
-        return 0;
+        next_cell_at(x, y) = 0;
+        break;
     }
 }
 
-Game::Game(int num_x, int num_y) :
+Game::Game(int num_x, int num_y, Screen * screen) :
     num_cells_x(num_x),
     num_cells_y(num_y),
     buff_width(num_x + 2),
     buff_height(num_y + 2),
     buffer_1(new bool[buff_width * buff_height]),
-    buffer_2(new bool[buff_width * buff_height]) {
+    buffer_2(new bool[buff_width * buff_height]),
+    scr(screen) {
     current_state = buffer_1 + buff_width + 1;
     next_state = buffer_2 + buff_width + 1;
     game = DAY_AND_NIGHT;
@@ -73,11 +117,73 @@ Game::~Game() {
 }
 
 bool& Game::cell_at(int x, int y) {
+#if 0
+    int index = (y + 1) * buff_width + (x + 1);
+    if (index >= buff_width * buff_height || index < 0) {
+        cout << "X: " << x << endl
+             << "Y: " << y << endl
+             << "INDEX: " << index << endl
+             << "WIDTH: " << buff_width << endl
+             << "HEIGHT: " << buff_height << endl
+             << "WIDTH * HEGIHT: " << buff_width * buff_height << endl;
+        exit(1);
+    }
+#endif
     return current_state[y * buff_width + x];
 }
 
 bool& Game::next_cell_at(int x, int y) {
+#if 0
+    int index = (y + 1) * buff_width + (x + 1);
+    if (index >= buff_width * buff_height || index < 0) {
+        cout << "X: " << x << endl
+             << "Y: " << y << endl
+             << "INDEX: " << index << endl
+             << "WIDTH: " << buff_width << endl
+             << "HEIGHT: " << buff_height << endl
+             << "WIDTH * HEGIHT: " << buff_width * buff_height << endl;
+        exit(1);
+    }
+#endif
     return next_state[y * buff_width + x];
+}
+
+int Game::moore_neighbors(int x, int y) {
+    int num_neighbors = 0;
+    num_neighbors += cell_at(x - 1, y - 1);
+    num_neighbors += cell_at(x    , y - 1);
+    num_neighbors += cell_at(x + 1, y - 1);
+    num_neighbors += cell_at(x - 1, y    );
+    num_neighbors += cell_at(x + 1, y    );
+    num_neighbors += cell_at(x - 1, y + 1);
+    num_neighbors += cell_at(x    , y + 1);
+    num_neighbors += cell_at(x + 1, y + 1);
+    return num_neighbors;
+}
+
+int Game::extended_neighbors(int x, int y, int levels) {
+    int num_neighbors = 0;
+    for (int j = y - levels; j <= y + levels; ++j) {
+        for (int i = x - levels; i <= x + levels; ++i) {
+            if (i == x && j == y) {
+                continue;
+            }
+            if (i > num_cells_x) {
+                continue;
+            }
+            if (i < -1) {
+                continue;
+            }
+            if (j > num_cells_y) {
+                continue;
+            }
+            if (j < -1) {
+                continue;
+            }
+            num_neighbors += cell_at(i, j);
+        }
+    }
+    return num_neighbors;
 }
 
 void Game::set_boundaries() {
@@ -129,14 +235,6 @@ void Game::set_boundaries() {
     }
 }
 
-int Game::cells_x() {
-    return num_cells_x;
-}
-
-int Game::cells_y() {
-    return num_cells_y;
-}
-
 void Game::init_cells(int percent) {
     for(int y = 0; y < num_cells_y; ++y) { 
         for(int x = 0; x < num_cells_x; ++x) {
@@ -151,41 +249,50 @@ void Game::iterate() {
     const game_types hoisted_game = game;
     for(int y = 0; y < num_cells_y; ++y) {
         for(int x = 0; x < num_cells_x; ++x) {
-            int num_neighbors = 0;
-            num_neighbors += cell_at(x - 1, y - 1);
-            num_neighbors += cell_at(x    , y - 1);
-            num_neighbors += cell_at(x + 1, y - 1);
-            num_neighbors += cell_at(x - 1, y    );
-            num_neighbors += cell_at(x + 1, y    );
-            num_neighbors += cell_at(x - 1, y + 1);
-            num_neighbors += cell_at(x    , y + 1);
-            num_neighbors += cell_at(x + 1, y + 1);
             switch (hoisted_game) {
             case CONWAY:
-                next_cell_at(x, y) = conway(num_neighbors, cell_at(x, y));
+                conway(x, y);
                 break;
             case SEEDS:
-                next_cell_at(x, y) = seeds(num_neighbors, cell_at(x, y));
+                seeds(x, y);
                 break;
             case DIAMONDS:
-                next_cell_at(x, y) = diamonds(num_neighbors, cell_at(x, y));
+                diamonds(x, y);
                 break;
             case BLOTCHES:
-                next_cell_at(x, y) = blotches(num_neighbors, cell_at(x, y));
+                blotches(x, y);
                 break;
             case DAY_AND_NIGHT:
-                next_cell_at(x, y) = day_and_night(num_neighbors, cell_at(x, y));
+                day_and_night(x, y);
                 break;
             default:
                 break;
             }
+            if (cell_at(x, y)) {
+                draw_cell(x, y);
+            }
         }
     }
     // Commit new_state
-    bool * temp;
-    temp = next_state;
-    next_state = current_state;
-    current_state = temp;
+    swap(next_state, current_state);
+}
+
+void Game::draw_cell(int x, int y) {
+    int y_start = y * scr->height / num_cells_y;
+    int x_start = x * scr->width / num_cells_x;
+    int y_end = (y + 1) * scr->height / num_cells_y - 1;
+    int x_end = (x + 1) * scr->width / num_cells_x - 1;
+    scr->drawRect(x_start, y_start, x_end, y_end);
+}
+
+void Game::draw_cells() {
+    for(int y = 0; y < num_cells_y; ++y) {
+        for(int x = 0; x < num_cells_x; ++x) {
+            if (cell_at(x, y)) {
+                draw_cell(x, y);
+            }
+        }
+    }
 }
 
 string Game::switch_game() {

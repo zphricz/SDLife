@@ -1,6 +1,7 @@
 #include <iostream>
 #include "quickcg.h"
 #include "Game.h"
+#include "Screen.h"
 
 using namespace QuickCG;
 using namespace std;
@@ -133,8 +134,8 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
     atexit(SDL_Quit);
+
     const SDL_VideoInfo * info = SDL_GetVideoInfo();
-    
     if (default_screen) {
         screen_width = info->current_w;
         screen_height = info->current_h;
@@ -144,22 +145,34 @@ int main(int argc, char* argv[]) {
         num_cells_y = info->current_h / 2;
     }
 
+    bool full_screen;
     if (screen_width == info->current_w && screen_height == info->current_h) {
-        screen(screen_width, screen_height, true, "Life");
+        full_screen = true;
     } else {
-        screen(screen_width, screen_height, false, "Life");
+        full_screen = false;
     }
 
-    Game g(num_cells_x, num_cells_y);
+    Screen scr(screen_width, screen_height, full_screen, "Life");
+    Game g(num_cells_x, num_cells_y, &scr);
     g.init_cells(rand_percent);
     time = getTicks();
     sleep_to = time + ms_diff;
 
     // Main loop
     while (true) {
+        scr.cls();
+
+        if (do_color) {
+            scr.setColor(color);
+        } else {
+            scr.setColor(white);
+        }
+
         if (simulate || step) {
             g.iterate();
             change_color(2);
+        } else {
+            g.draw_cells();
         }
 
         SDL_PollEvent(&event);
@@ -169,8 +182,8 @@ int main(int argc, char* argv[]) {
         bool lmb = false, rmb = false;
         getMouseState(mouse_x, mouse_y, lmb, rmb);
         if (lmb || rmb) {
-            int cell_y = mouse_y * g.cells_y() / screen_height;
-            int cell_x = mouse_x * g.cells_x() / screen_width;
+            int cell_y = mouse_y * num_cells_y / screen_height;
+            int cell_x = mouse_x * num_cells_x / screen_width;
             if (!(last_clicked_cell_x == cell_x && last_clicked_cell_y == cell_y)) {
                 if (last_clicked_cell_x == -1) {
                     last_clicked_cell_x = cell_x;
@@ -331,37 +344,18 @@ int main(int argc, char* argv[]) {
         if (keyDown(SDLK_ESCAPE)) {
             break;
         }
-
-        // Commit image of cells to buffer
-        cls();
-        if (do_color) {
-            setColor(color);
-        } else {
-            setColor(white);
-        }
-        for (int cell_y = 0; cell_y < g.cells_y(); ++cell_y) {
-            for (int cell_x = 0; cell_x < g.cells_x(); ++cell_x) {
-                if (g.cell_at(cell_x, cell_y)) {
-                    int y_start = cell_y * screen_height / g.cells_y();
-                    int x_start = cell_x * screen_width / g.cells_x();
-                    int y_end = (cell_y + 1) * screen_height / g.cells_y() - 1;
-                    int x_end = (cell_x + 1) * screen_width / g.cells_x() - 1;
-                    drawRect(x_start, y_start, x_end, y_end);
-                }
-            }
-        }
-
+    
         old_time = time;
         time = getTicks();
         if (show_fps) {
-            print(1000.0 / (time - old_time));
+            scr.print(1000.0 / (time - old_time));
         } else {
             // Display messages
             if (time < end_print_time) {
-                print(message);
+                scr.print(message);
             }
         }
-        redraw(); // Draw SDL pixel buffer
+        scr.redraw(); // Draw SDL pixel buffer
 
         // Sleep so that FPS is maintained
         if (sleep_to > time) {

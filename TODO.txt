@@ -1,2 +1,4 @@
 - Split main.cpp up into multiple files
 - Parallelize code (determination of new cell states/rendering)
+- Move key checking code somewhere else
+- Make functions for neighbor determination and game rules

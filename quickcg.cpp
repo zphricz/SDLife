@@ -62,6 +62,7 @@ std::unordered_map<int, bool> keypressed; //for the "keyPressed" function to det
 SDL_Surface* scr; //the single SDL surface used
 Uint8* inkeys;
 SDL_Event event = {0};
+Uint32 colorSDL;
 
 ////////////////////////////////////////////////////////////////////////////////
 //KEYBOARD FUNCTIONS////////////////////////////////////////////////////////////
@@ -151,13 +152,24 @@ void cls(const ColorRGB& color)
     SDL_FillRect(scr, NULL, 65536 * color.r + 256 * color.g + color.b);
 }
 
+void setColor(const ColorRGB& color)
+{
+    colorSDL = SDL_MapRGB(scr->format, color.r, color.g, color.b);
+}
+
 //Puts an RGB color pixel at position x,y
+void pset(int x, int y)
+{
+    //if(x < 0 || y < 0 || x >= w || y >= h) return;
+    Uint32* bufp = (Uint32*)scr->pixels + y * scr->pitch / 4 + x;
+    *bufp = colorSDL;
+}
+
 void pset(int x, int y, const ColorRGB& color)
 {
-    if(x < 0 || y < 0 || x >= w || y >= h) return;
-    Uint32 colorSDL = SDL_MapRGB(scr->format, color.r, color.g, color.b);
-    Uint32* bufp;
-    bufp = (Uint32*)scr->pixels + y * scr->pitch / 4 + x;
+    setColor(color);
+    //if(x < 0 || y < 0 || x >= w || y >= h) return;
+    Uint32* bufp = (Uint32*)scr->pixels + y * scr->pitch / 4 + x;
     *bufp = colorSDL;
 }
 
@@ -167,9 +179,9 @@ ColorRGB pget(int x, int y)
     if(x < 0 || y < 0 || x >= w || y >= h) return RGB_Black;
     Uint32* bufp;
     bufp = (Uint32*)scr->pixels + y * scr->pitch / 4 + x;
-    Uint32 colorSDL = *bufp;
+    Uint32 color_SDL = *bufp;
     ColorRGB8bit colorRGB;
-    SDL_GetRGB(colorSDL, scr->format, &colorRGB.r, &colorRGB.g, &colorRGB.b);
+    SDL_GetRGB(color_SDL, scr->format, &colorRGB.r, &colorRGB.g, &colorRGB.b);
     return ColorRGB(colorRGB);
 }
 
@@ -306,7 +318,7 @@ unsigned long getTicks()
 
 
 //Fast horizontal line from (x1,y) to (x2,y), with rgb color
-bool horLine(int y, int x1, int x2, const ColorRGB& color)
+bool horLine(int y, int x1, int x2)
 {
     if(x2 < x1)
     {
@@ -318,7 +330,6 @@ bool horLine(int y, int x1, int x2, const ColorRGB& color)
     if(x1 < 0) x1 = 0; //clip
     if(x2 >= w) x2 = w - 1; //clip
 
-    Uint32 colorSDL = SDL_MapRGB(scr->format, color.r, color.g, color.b);
     Uint32* bufp;
     bufp = (Uint32*)scr->pixels + y * scr->pitch / 4 + x1;
     for(int x = x1; x <= x2; x++)
@@ -331,7 +342,7 @@ bool horLine(int y, int x1, int x2, const ColorRGB& color)
 
 
 //Fast vertical line from (x,y1) to (x,y2), with rgb color
-bool verLine(int x, int y1, int y2, const ColorRGB& color)
+bool verLine(int x, int y1, int y2)
 {
     if(y2 < y1)
     {
@@ -343,7 +354,6 @@ bool verLine(int x, int y1, int y2, const ColorRGB& color)
     if(y1 < 0) y1 = 0; //clip
     if(y2 >= w) y2 = h - 1; //clip
 
-    Uint32 colorSDL = SDL_MapRGB(scr->format, color.r, color.g, color.b);
     Uint32* bufp;
 
     bufp = (Uint32*)scr->pixels + y1 * scr->pitch / 4 + x;
@@ -461,7 +471,7 @@ bool drawCircle(int xc, int yc, int radius, const ColorRGB& color)
 
 
 //Filled bresenham circle with center at (xc,yc) with radius and red green blue color
-bool drawDisk(int xc, int yc, int radius, const ColorRGB& color)
+bool drawDisk(int xc, int yc, int radius)
 {
     if(xc + radius < 0 || xc - radius >= w || yc + radius < 0 || yc - radius >= h) return 0; //every single pixel outside screen, so don't waste time on it
     int x = 0;
@@ -480,10 +490,10 @@ bool drawDisk(int xc, int yc, int radius, const ColorRGB& color)
         f = yc + x;
         g = xc - y;
         h = yc - x;
-        if(b != pb) horLine(b, a, c, color);
-        if(d != pd) horLine(d, a, c, color);
-        if(f != b)  horLine(f, e, g, color);
-        if(h != d && h != f) horLine(h, e, g, color);
+        if(b != pb) horLine(b, a, c);
+        if(d != pd) horLine(d, a, c);
+        if(f != b)  horLine(f, e, g);
+        if(h != d && h != f) horLine(h, e, g);
         pb = b;
         pd = d;
         if(p < 0) p += (x++ << 2) + 6;
@@ -494,15 +504,14 @@ bool drawDisk(int xc, int yc, int radius, const ColorRGB& color)
 }
 
 //Rectangle with corners (x1,y1) and (x2,y2) and rgb color
-bool drawRect(int x1, int y1, int x2, int y2, const ColorRGB& color)
+bool drawRect(int x1, int y1, int x2, int y2)
 {
-    if(x1 < 0 || x1 > w - 1 || x2 < 0 || x2 > w - 1 || y1 < 0 || y1 > h - 1 || y2 < 0 || y2 > h - 1) return 0;
+    //if(x1 < 0 || x1 > w - 1 || x2 < 0 || x2 > w - 1 || y1 < 0 || y1 > h - 1 || y2 < 0 || y2 > h - 1) return 0;
     SDL_Rect rec;
     rec.x = x1;
     rec.y = y1;
     rec.w = x2 - x1 + 1;
     rec.h = y2 - y1 + 1;
-    Uint32 colorSDL = SDL_MapRGB(scr->format, color.r, color.g, color.b);
     SDL_FillRect(scr, &rec, colorSDL);  //SDL's ability to draw a hardware rectangle is used for now
     return 1;
 }

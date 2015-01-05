@@ -1,15 +1,17 @@
 #include "quickcg.h"
+#include <iostream>
 using namespace QuickCG;
+using std::cout;
+using std::endl;
 
-#define FPS 30
+const double FPS = 60.0;
 
-struct cell
-{
-    unsigned char state;
-    unsigned char new_state;
-};
-
-static cell * cells;
+static bool * buffer_1;
+static bool * buffer_2;
+static bool * current_state;
+static bool * next_state;
+static int buff_width;
+static int buff_height;
 
 static ColorRGB color(255, 0, 0);
 static const ColorRGB black(0, 0, 0);
@@ -20,11 +22,19 @@ static enum {UP_GREEN,   DOWN_RED, UP_BLUE,
 static enum {CONWAY, SEEDS, DIAMONDS, BLOTCHES, DAY_AND_NIGHT} game = DAY_AND_NIGHT;
 static enum {PACMAN, DEAD, ALIVE} boundary = PACMAN;
 
-// Doesn't work for negative b
-static int mod(int a, int b)
+static bool get_current(int x, int y)
 {
-    int val = a % b;
-    return (val >= 0) ? val : val + b;
+    return current_state[y * buff_width + x];
+}
+
+static void set_current(int x, int y, bool next)
+{
+    current_state[y * buff_width + x] = next;
+}
+
+static void set_next(int x, int y, bool next)
+{
+    next_state[y * buff_width + x] = next;
 }
 
 static void change_color(int rate)
@@ -87,9 +97,59 @@ static void init_cells(int num_cells_x, int num_cells_y, int percent)
 {
     for(int y = 0; y < num_cells_y; ++y) { 
         for(int x = 0; x < num_cells_x; ++x) {
-            if (percent > rand() % 100) cells[y * num_cells_x + x].state = 1;
-            else cells[y * num_cells_x + x].state = 0;
+            if (percent > rand() % 100) set_current(x, y, 1);
+            else set_current(x, y, 0);
         }
+    }
+}
+
+static void set_boundaries(int num_cells_x, int num_cells_y)
+{
+    switch(boundary) {
+    case PACMAN:
+        set_current(-1, -1, get_current(num_cells_x - 1, num_cells_y - 1));
+        set_current(num_cells_x, -1, get_current(0, num_cells_y - 1));
+        set_current(-1, num_cells_y, get_current(num_cells_x - 1, 0));
+        set_current(num_cells_x, num_cells_y, get_current(0, 0));
+        for (int x = 0; x < num_cells_x; ++x) {
+            set_current(x, -1, get_current(x, num_cells_y - 1));
+            set_current(x, num_cells_y, get_current(x, 0));
+        }
+        for (int y = 0; y < num_cells_y; ++y) {
+            set_current(-1, y, get_current(num_cells_x - 1, y));
+            set_current(num_cells_x, y, get_current(0, y));
+        }
+        break;
+    case ALIVE:
+        set_current(-1, -1, 1);
+        set_current(num_cells_x, -1, 1);
+        set_current(-1, num_cells_y, 1);
+        set_current(num_cells_x, num_cells_y, 1);
+        for (int x = 0; x < num_cells_x; ++x) {
+            set_current(x, -1, 1);
+            set_current(x, num_cells_y, 1);
+        }
+        for (int y = 0; y < num_cells_y; ++y) {
+            set_current(-1, y, 1);
+            set_current(num_cells_x, y, 1);
+        }
+        break;
+    case DEAD:
+        set_current(-1, -1, 0);
+        set_current(num_cells_x, -1, 0);
+        set_current(-1, num_cells_y, 0);
+        set_current(num_cells_x, num_cells_y, 0);
+        for (int x = 0; x < num_cells_x; ++x) {
+            set_current(x, -1, 0);
+            set_current(x, num_cells_y, 0);
+        }
+        for (int y = 0; y < num_cells_y; ++y) {
+            set_current(-1, y, 0);
+            set_current(num_cells_x, y, 0);
+        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -156,7 +216,12 @@ int main(int argc, char* argv[])
     else
         screen(screen_width, screen_height, false, "Life");
 
-    cells = new cell[num_cells_x * num_cells_y];
+    buff_width = num_cells_x + 2;
+    buff_height = num_cells_y + 2;
+    buffer_1 = new bool[buff_width * buff_height];
+    buffer_2 = new bool[buff_width * buff_height];
+    current_state = buffer_1 + buff_width + 1;
+    next_state = buffer_2 + buff_width + 1;
     init_cells(num_cells_x, num_cells_y, rand_percent);
     time = getTicks();
     sleep_to = time + ms_diff;
@@ -165,87 +230,28 @@ int main(int argc, char* argv[])
     while (true) {
         if (simulate || step) {
             // Determine new_state per cell
+            set_boundaries(num_cells_x, num_cells_y);
             for(int y = 0; y < num_cells_y; ++y) {
                 for(int x = 0; x < num_cells_x; ++x) {
                     int num_neighbors = 0;
-                    
-                    switch (boundary) {
-                    case PACMAN: // Causes noticeable performance hit
-                        num_neighbors += cells[mod(y - 1, num_cells_y) * num_cells_x + mod(x - 1, num_cells_x)].state;
-                        num_neighbors += cells[mod(y - 1, num_cells_y) * num_cells_x + mod(x    , num_cells_x)].state;
-                        num_neighbors += cells[mod(y - 1, num_cells_y) * num_cells_x + mod(x + 1, num_cells_x)].state;
-                        num_neighbors += cells[mod(y    , num_cells_y) * num_cells_x + mod(x - 1, num_cells_x)].state;
-                        num_neighbors += cells[mod(y    , num_cells_y) * num_cells_x + mod(x + 1, num_cells_x)].state;
-                        num_neighbors += cells[mod(y + 1, num_cells_y) * num_cells_x + mod(x - 1, num_cells_x)].state;
-                        num_neighbors += cells[mod(y + 1, num_cells_y) * num_cells_x + mod(x    , num_cells_x)].state;
-                        num_neighbors += cells[mod(y + 1, num_cells_y) * num_cells_x + mod(x + 1, num_cells_x)].state;
-                        break;
-                    case DEAD:
-                        if (x - 1 >= 0) {
-                            if (y - 1 >= 0)
-                                num_neighbors += cells[(y - 1) * num_cells_x + x - 1].state;
-                            num_neighbors += cells[y * num_cells_x + x - 1].state;
-                            if (y + 1 < num_cells_y)
-                                num_neighbors += cells[(y + 1) * num_cells_x + x - 1].state;
-                        }
-                        if (y - 1 >= 0)
-                            num_neighbors += cells[(y - 1) * num_cells_x + x].state;
-                        if (y + 1 < num_cells_y)
-                            num_neighbors += cells[(y + 1) * num_cells_x + x].state;
-                        if (x + 1 < num_cells_x) {
-                            if (y - 1 >= 0)
-                                num_neighbors += cells[(y - 1) * num_cells_x + x + 1].state;
-                            num_neighbors += cells[y * num_cells_x + x + 1].state;
-                            if (y + 1 < num_cells_y)
-                                num_neighbors += cells[(y + 1) * num_cells_x + x + 1].state;
-                        }
-                        break;
-                    case ALIVE:
-                        if (x - 1 >= 0) {
-                            if (y - 1 >= 0)
-                                num_neighbors += cells[(y - 1) * num_cells_x + x - 1].state;
-                            else
-                                num_neighbors++;
-                            num_neighbors += cells[y * num_cells_x + x - 1].state;
-                            if (y + 1 < num_cells_y)
-                                num_neighbors += cells[(y + 1) * num_cells_x + x - 1].state;
-                            else
-                                num_neighbors++;
-                        }
-                        else
-                            num_neighbors += 3;
-                        if (y - 1 >= 0)
-                            num_neighbors += cells[(y - 1) * num_cells_x + x].state;
-                        else
-                            num_neighbors++;
-                        if (y + 1 < num_cells_y)
-                            num_neighbors += cells[(y + 1) * num_cells_x + x].state;
-                        else
-                            num_neighbors++;
-                        if (x + 1 < num_cells_x) {
-                            if (y - 1 >= 0)
-                                num_neighbors += cells[(y - 1) * num_cells_x + x + 1].state;
-                            else
-                                num_neighbors++;
-                            num_neighbors += cells[y * num_cells_x + x + 1].state;
-                            if (y + 1 < num_cells_y)
-                                num_neighbors += cells[(y + 1) * num_cells_x + x + 1].state;
-                            else
-                                num_neighbors++;
-                        }
-                        else
-                            num_neighbors += 3;
-                    }
+                    num_neighbors += get_current(x - 1, y - 1);
+                    num_neighbors += get_current(x    , y - 1);
+                    num_neighbors += get_current(x + 1, y - 1);
+                    num_neighbors += get_current(x - 1, y    );
+                    num_neighbors += get_current(x + 1, y    );
+                    num_neighbors += get_current(x - 1, y + 1);
+                    num_neighbors += get_current(x    , y + 1);
+                    num_neighbors += get_current(x + 1, y + 1);
 
                     // Game definitions
                     switch (game) {
                     case SEEDS:
                         switch (num_neighbors) {
                         case 2:
-                            cells[y * num_cells_x + x].new_state  = !cells[y * num_cells_x + x].state;
+                            set_next(x, y, !get_current(x, y));
                             break; 
                         default:   
-                            cells[y * num_cells_x + x].new_state = 0;
+                            set_next(x, y, 0);
                             break;  
                         }           
                         break;     
@@ -253,10 +259,10 @@ int main(int argc, char* argv[])
                     case BLOTCHES:
                         switch (num_neighbors) {
                         case 2:
-                            cells[y * num_cells_x + x].new_state  = rand() % 2;
+                            set_next(x, y, rand() % 2);
                             break; 
                         default:   
-                            cells[y * num_cells_x + x].new_state  = cells[y * num_cells_x + x].state;
+                            set_next(x, y, get_current(x, y));
                             break;  
                         }           
                         break;     
@@ -264,10 +270,10 @@ int main(int argc, char* argv[])
                     case DIAMONDS:
                         switch (num_neighbors) {
                         case 2:
-                            cells[y * num_cells_x + x].new_state  = !cells[y * num_cells_x + x].state;
+                            set_next(x, y, !get_current(x, y));
                             break; 
                         default:   
-                            cells[y * num_cells_x + x].new_state  = cells[y * num_cells_x + x].state;
+                            set_next(x, y, get_current(x, y));
                             break;  
                         }           
                         break;     
@@ -278,13 +284,13 @@ int main(int argc, char* argv[])
                         case 6:
                         case 7:
                         case 8:
-                            cells[y * num_cells_x + x].new_state  = 1;
+                            set_next(x, y, 1);
                             break; 
                         case 4:    
-                            cells[y * num_cells_x + x].new_state  = cells[y * num_cells_x + x].state;
+                            set_next(x, y, get_current(x, y));
                             break; 
                         default:   
-                            cells[y * num_cells_x + x].new_state = 0;
+                            set_next(x, y, 0);
                             break;
                         }
                         break;
@@ -292,13 +298,13 @@ int main(int argc, char* argv[])
                     case CONWAY:
                         switch (num_neighbors) {
                         case 2:
-                            cells[y * num_cells_x + x].new_state = cells[y * num_cells_x + x].state;
+                            set_next(x, y, get_current(x, y));
                             break; 
                         case 3:    
-                            cells[y * num_cells_x + x].new_state  = 1;
+                            set_next(x, y, 1);
                             break; 
                         default:   
-                            cells[y * num_cells_x + x].new_state = 0;
+                            set_next(x, y, 0);
                             break;
                         }
                         break;
@@ -309,11 +315,10 @@ int main(int argc, char* argv[])
             change_color(2);
 
             // Commit new_state
-            for(int y = 0; y < num_cells_y; ++y) {
-                for(int x = 0; x < num_cells_x; ++x) {
-                    cells[y * num_cells_x + x].state = cells[y * num_cells_x + x].new_state;
-                }
-            }
+            bool * temp;
+            temp = next_state;
+            next_state = current_state;
+            current_state = temp;
         }
 
         SDL_PollEvent(&event);
@@ -338,9 +343,9 @@ int main(int argc, char* argv[])
                     for(int x = last_clicked_cell_x; x != cell_x; x += increment) {
                         int y = last_clicked_cell_y + dy * (x - last_clicked_cell_x) / dx;
                         if (lmb)
-                            cells[y * num_cells_x + x].state = 1;
+                            set_current(x, y, 1);
                         else if (rmb)
-                            cells[y * num_cells_x + x].state = 0;
+                            set_current(x, y, 0);
                     }
                 }
                 else {
@@ -348,15 +353,15 @@ int main(int argc, char* argv[])
                     for(int y = last_clicked_cell_y; y != cell_y; y += increment) {
                         int x = last_clicked_cell_x + dx * (y - last_clicked_cell_y) / dy;
                         if (lmb)
-                            cells[y * num_cells_x + x].state = 1;
+                            set_current(x, y, 1);
                         else if (rmb)
-                            cells[y * num_cells_x + x].state = 0;
+                            set_current(x, y, 0);
                     }
                 }
                 if (lmb)
-                    cells[cell_y * num_cells_x + cell_x].state = 1;
+                    set_current(cell_x, cell_y, 1);
                 else if (rmb)
-                    cells[cell_y * num_cells_x + cell_x].state = 0;
+                    set_current(cell_x, cell_y, 0);
             }
             last_clicked_cell_x = cell_x;
             last_clicked_cell_y = cell_y;
@@ -368,54 +373,87 @@ int main(int argc, char* argv[])
 
         readKeys();
         // Handle key presses
-        if (keyPressed(SDLK_F1)) {
-            game = CONWAY;
-            end_print_time = getTicks() + 500;
-            message = "CONWAY";
-        }
-        if (keyPressed(SDLK_F2)) {
-            game = SEEDS;
-            end_print_time = getTicks() + 500;
-            message = "SEEDS";
-        }
-        if (keyPressed(SDLK_F3)) {
-            game = DIAMONDS;
-            end_print_time = getTicks() + 500;
-            message = "DIAMONDS";
-        }
-        if (keyPressed(SDLK_F4)) {
-            game = BLOTCHES;
-            end_print_time = getTicks() + 500;
-            message = "BLOTCHES";
-        }
-        if (keyPressed(SDLK_F5)) {
-            game = DAY_AND_NIGHT;
-            end_print_time = getTicks() + 500;
-            message = "DAY AND NIGHT";
-        }
-        if (keyPressed(SDLK_F6)) {
-            do_color = !do_color;
-        }
-        if (keyPressed(SDLK_F7)) {
-            change_color(25);
-        }
-        if (keyPressed(SDLK_F8)) {
-            if (boundary == PACMAN) {
-                boundary = DEAD;
-                message = "DEAD BORDERS";
+        {
+            static bool pressed = false;
+            if (keyDown(SDLK_1)) {
+                if (!pressed) {
+                    pressed = true;
+                    if (game == CONWAY) {
+                        game = SEEDS;
+                        message = "SEEDS";
+                    } else if (game == SEEDS) {
+                        game = DIAMONDS;
+                        message = "DIAMONDS";
+                    } else if (game == DIAMONDS) {
+                        game = BLOTCHES;
+                        message = "BLOTCHES";
+                    } else if (game == BLOTCHES) {
+                        game = DAY_AND_NIGHT;
+                        message = "DAY_AND_NIGHT";
+                    } else { // game == DAY_AND_NIGHT
+                        game = CONWAY;
+                        message = "CONWAY";
+                    }
+                    end_print_time = getTicks() + 500;
+                }
+            } else {
+                pressed = false;
             }
-            else if (boundary == DEAD) {
-                boundary = ALIVE;
-                message = "ALIVE BORDERS";
-            }
-            else if (boundary == ALIVE) {
-                boundary = PACMAN;
-                message = "PACMAN BORDERS";
-            }
-            end_print_time = getTicks() + 500;
         }
-        /* SDLK_F9 not accounted for */
-        if (keyPressed(SDLK_F10)) {
+        {
+            static bool pressed = false;
+            if (keyDown(SDLK_2)) {
+                if (!pressed) {
+                    pressed = true;
+                    if (boundary == PACMAN) {
+                        boundary = DEAD;
+                        message = "DEAD BORDERS";
+                    }
+                    else if (boundary == DEAD) {
+                        boundary = ALIVE;
+                        message = "ALIVE BORDERS";
+                    }
+                    else if (boundary == ALIVE) {
+                        boundary = PACMAN;
+                        message = "PACMAN BORDERS";
+                    }
+                    end_print_time = getTicks() + 500;
+                }
+            } else {
+                pressed = false;
+            }
+        }
+        {
+            static bool pressed = false;
+            if (keyDown(SDLK_3)) {
+                if (!pressed) {
+                    pressed = true;
+                    do_color = !do_color;
+                }
+            } else {
+                pressed = false;
+            }
+        }
+        if (keyDown(SDLK_4)) {
+            change_color(10);
+        }
+        {
+            static bool pressed = false;
+            if (keyDown(SDLK_RETURN)) {
+                if (!pressed) {
+                    pressed = true;
+                    simulate = !simulate;
+                    if (simulate)
+                        message = "START";
+                    else
+                        message = "STOP";
+                    end_print_time = getTicks() + 500;
+                }
+            } else {
+                pressed = false;
+            }
+        }
+        if (keyDown(SDLK_LEFT)) {
             rand_percent = 0;
             init_cells(num_cells_x, num_cells_y, rand_percent);
             end_print_time = getTicks() + 500;
@@ -423,7 +461,7 @@ int main(int argc, char* argv[])
             convert << rand_percent;
             message = convert.str() + "%";
         }
-        if (keyPressed(SDLK_F11)) {
+        if (keyDown(SDLK_RIGHT)) {
             rand_percent = 100;
             init_cells(num_cells_x, num_cells_y, rand_percent);
             end_print_time = getTicks() + 500;
@@ -431,15 +469,7 @@ int main(int argc, char* argv[])
             convert << rand_percent;
             message = convert.str() + "%";
         }
-        if (keyPressed(SDLK_F12)) {
-            simulate = !simulate;
-            if (simulate)
-                message = "START";
-            else
-                message = "STOP";
-            end_print_time = getTicks() + 500;
-        }
-        if (keyDown(SDLK_PAGEDOWN)) {
+        if (keyDown(SDLK_PAGEDOWN) || keyDown(SDLK_DOWN)) {
             rand_percent = rand_percent == 0 ? 0 : rand_percent - 1;
             init_cells(num_cells_x, num_cells_y, rand_percent);
             end_print_time = getTicks() + 500;
@@ -447,7 +477,7 @@ int main(int argc, char* argv[])
             convert << rand_percent;
             message = convert.str() + "%";
         }
-        if (keyDown(SDLK_PAGEUP)) {
+        if (keyDown(SDLK_PAGEUP) || keyDown(SDLK_UP)) {
             rand_percent = rand_percent == 100 ? 100 : rand_percent + 1;
             init_cells(num_cells_x, num_cells_y, rand_percent);
             end_print_time = getTicks() + 500;
@@ -455,35 +485,53 @@ int main(int argc, char* argv[])
             convert << rand_percent;
             message = convert.str() + "%";
         }
-        if (keyPressed(SDLK_SPACE))
-            step = true;
-        else
-            step = false;
-        if (keyPressed(SDLK_ESCAPE))
+        {
+            static bool pressed = false;
+            if (keyDown(SDLK_SPACE)) {
+                if (!pressed) {
+                    pressed = true;
+                    step = true;
+                } else {
+                    step = false;
+                }
+            } else {
+                pressed = false;
+                step = false;
+            }
+        }
+        if (keyDown(SDLK_ESCAPE)) {
             break;
+        }
 
         // Commit image of cells to buffer
-        for(int y = 0; y < screen_height; ++y) {
-            int cell_y = y * num_cells_y / screen_height;
-            for(int x = 0; x < screen_width; ++x) {
-                int cell_x = x * num_cells_x / screen_width;
-                if (cells[cell_y * num_cells_x + cell_x].state) {
-                    if (do_color)
-                        pset(x, y, color);
-                    else
-                        pset(x, y, white);
+        cls();
+        if (do_color) {
+            setColor(color);
+        } else {
+            setColor(white);
+        }
+        for (int cell_y = 0; cell_y < num_cells_y; ++cell_y) {
+            for (int cell_x = 0; cell_x < num_cells_x; ++cell_x) {
+                if (get_current(cell_x, cell_y)) {
+                    int y_start = cell_y * screen_height / num_cells_y;
+                    int x_start = cell_x * screen_width / num_cells_x;
+                    int y_end = (cell_y + 1) * screen_height / num_cells_y - 1;
+                    int x_end = (cell_x + 1) * screen_width / num_cells_x - 1;
+                    drawRect(x_start, y_start, x_end, y_end);
                 }
-                else
-                    pset(x, y, black);
             }
         }
 
         old_time = time;
         time = getTicks();
-
-        // Draw buffer
+#if 0
+        // Diplay FPS
+        print(1000.0 / (time - old_time));
+#else
+        // Display messages
         if (time < end_print_time)
             print(message);
+#endif
         redraw(); // Draw SDL pixel buffer
 
         // Sleep so that FPS is maintained
@@ -495,7 +543,8 @@ int main(int argc, char* argv[])
             sleep_to += ((time - sleep_to)/ms_diff + 1) * ms_diff;
         }
     }
-    delete [] cells;
+    delete [] buffer_1;
+    delete [] buffer_2;
     return 0;
 }
 

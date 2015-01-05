@@ -197,7 +197,9 @@ void lock();
 void unlock();
 void redraw();
 void cls(const ColorRGB& color = RGB_Black);
+void setColor(const ColorRGB& color);
 void pset(int x, int y, const ColorRGB& color);
+void pset(int x, int y);
 ColorRGB pget(int x, int y);
 void drawBuffer(Uint32 *buffer);
 bool onScreen(int x, int y);
@@ -220,12 +222,12 @@ inline double getTime() { return getTicks() / 1000.0; } //time in seconds
 //2D SHAPES/////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool horLine(int y, int x1, int x2, const ColorRGB& color);
-bool verLine(int x, int y1, int y2, const ColorRGB& color);
-bool drawLine(int x1, int y1, int x2, int y2, const ColorRGB& color);
-bool drawCircle(int xc, int yc, int radius, const ColorRGB& color);
-bool drawDisk(int xc, int yc, int radius, const ColorRGB& color);
-bool drawRect(int x1, int y1, int x2, int y2, const ColorRGB& color);
+bool horLine(int y, int x1, int x2);
+bool verLine(int x, int y1, int y2);
+bool drawLine(int x1, int y1, int x2, int y2);
+bool drawCircle(int xc, int yc, int radius);
+bool drawDisk(int xc, int yc, int radius);
+bool drawRect(int x1, int y1, int x2, int y2);
 bool clipLine(int x1,int y1,int x2, int y2, int & x3, int & y3, int & x4, int & y4);
 
 ////////////////////////////////////////////////////////////////////////////////

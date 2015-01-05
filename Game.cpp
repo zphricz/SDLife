@@ -1,3 +1,4 @@
+#include<stdlib.h>
 #include "Game.h"
 
 // GAME DEFINITIONS
@@ -147,7 +148,6 @@ void Game::init_cells(int percent) {
 
 void Game::iterate() {
     set_boundaries();
-
     const game_types hoisted_game = game;
     for(int y = 0; y < num_cells_y; ++y) {
         for(int x = 0; x < num_cells_x; ++x) {
@@ -187,6 +187,7 @@ void Game::iterate() {
     next_state = current_state;
     current_state = temp;
 }
+
 string Game::switch_game() {
     switch (game) {
     case CONWAY:

@@ -7,8 +7,8 @@ CXX=g++-4.9
 # LDFLAGS=-lSDL
 # CXX=g++
 
-life: quickcg.o main.o
-	$(CXX) quickcg.o main.o $(CXXFLAGS) $(LDFLAGS) -olife
+life: quickcg.o main.o Game.o
+	$(CXX) quickcg.o main.o Game.o $(CXXFLAGS) $(LDFLAGS) -olife
 
 clean:
 	rm -rf *.o life

@@ -20,23 +20,26 @@ You can interact with the project by pressing keys on your keyboard:
 
     Simulation modes
     ----------------
-    F1: Change to Conway's Game of Life
-    F2: Change to Seeds
-    F3: Change to Diamonds
-    F4: Change to Blotches
-    F5: Change to Day and Night
+    Press 1 to switch between simulation modes, they iterate in the following
+    order:
+        - Conway's Game of Life
+        - Seeds
+        - Diamonds
+        - Blotches
+        - Day and Night
 
     Other Options
     -------------
-    F6: Flip drawing live cells in colors or in white
-    F7: Move colors ahead somewhat
-    F8: Switch boundary mode (PACMAN vs DEAD vs ALIVE)
-    F10: Initialize cells with all dead
-    F11: initialize cells with all alive
-    F12: Pause/start simulation
-    Space: Single-step simulation if paused
-    PgUp: Initialize cells with increasing percentage alive
-    PgDn: Initialize cells with decreasing percentage alive
+    2: Switch boundary modes (PACMAND vs DEAD vs ALIVE)
+    3: Flip drawing live cells in colors or in white
+    4: Move colors ahead somewhat
+    5: Switch between displaying FPS and displaying status messages
+    left arrow: Initialize cells with all dead
+    right arrow: initialize cells with all alive
+    enter: Pause/start simulation
+    space: Single-step simulation if paused
+    PgUp/up arrow: Initialize cells with increasing percentage alive
+    PgDn/down arrow: Initialize cells with decreasing percentage alive
 
 You can also interact by using your mouse:
 
@@ -46,6 +49,7 @@ You can also interact by using your mouse:
 Authors
 -------
 
-The logic begind the cellular automata was written by me, Zack Hricz. The wrapper
-functions found in quickcg.h and quickcg.c were written by Lode Vadevenne.
+The logic begind the cellular automata was written by me, Zack Hricz. The
+wrapper functions found in quickcg.h and quickcg.c were written by Lode
+Vadevenne and modified by Zack Hricz.
 

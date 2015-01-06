@@ -14,9 +14,8 @@ class Screen
         SDL_Surface * scr;
         Uint32 colorSDL;
 
-    void drawLetter(unsigned char n, int x, int y, const ColorRGB& color, bool bg, const ColorRGB& color2);
-    int printString(const std::string& text, int x, int y, const ColorRGB& color, bool bg, const ColorRGB& color2, int forceLength);
-
+        void drawLetter(unsigned char n, int x, int y, const ColorRGB& color, bool bg, const ColorRGB& color2);
+        int printString(const std::string& text, int x, int y, const ColorRGB& color, bool bg, const ColorRGB& color2, int forceLength);
     public:
         const int width;
         const int height;

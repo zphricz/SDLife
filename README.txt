@@ -33,7 +33,7 @@ You can interact with the project by pressing keys on your keyboard:
     2: Switch boundary modes (PACMAND vs DEAD vs ALIVE)
     3: Flip drawing live cells in colors or in white
     4: Move colors ahead somewhat
-    5: Switch between displaying FPS and displaying status messages
+    5: Switch between displaying FPS and not
     left arrow: Initialize cells with all dead
     right arrow: initialize cells with all alive
     enter: Pause/start simulation

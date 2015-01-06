@@ -35,7 +35,7 @@ void Game::seeds(int x, int y) {
     }
 }
 
-/*void Game::blotches(int x, int y) {
+void Game::blotches(int x, int y) {
     int num_neighbors = moore_neighbors(x, y);
     switch (num_neighbors) {
     case 2:
@@ -45,9 +45,9 @@ void Game::seeds(int x, int y) {
         next_cell_at(x, y) = cell_at(x, y);
         break;
     }
-}*/
+}
 
-void Game::blotches(int x, int y) {
+/*void Game::blotches(int x, int y) {
     //int num_neighbors = moore_neighbors(x, y);
     int num_neighbors = extended_neighbors(x, y, 2);
     switch (num_neighbors) {
@@ -65,7 +65,7 @@ void Game::blotches(int x, int y) {
         next_cell_at(x, y) = cell_at(x, y);
         break;
     }
-}
+}*/
 
 void Game::diamonds(int x, int y) {
     int num_neighbors = moore_neighbors(x, y);

@@ -7,10 +7,9 @@ using namespace QuickCG;
 using namespace std;
 
 const double FPS = 60.0;
+const int frames_per_fps_show = 5;
 
-static ColorRGB color(255, 0, 0); // Start as red
-static const ColorRGB black(0, 0, 0);
-static const ColorRGB white(255, 255, 255);
+static ColorRGB color = RGB_Red; // Start as red
 
 static enum {UP_GREEN,   DOWN_RED, UP_BLUE,
              DOWN_GREEN, UP_RED,   DOWN_BLUE} color_state = UP_GREEN;
@@ -94,6 +93,8 @@ int main(int argc, char* argv[]) {
     unsigned int sleep_to;
     unsigned int ms_diff = (unsigned int)(1000.0 / FPS);
     unsigned int end_print_time = 500;
+    string fps = "NULL";
+    int fps_counter = 0;
     string message = "DAY AND NIGHT";
     SDL_Event event = {0};
 
@@ -161,11 +162,10 @@ int main(int argc, char* argv[]) {
     // Main loop
     while (true) {
         scr.cls();
-
         if (do_color) {
             scr.setColor(color);
         } else {
-            scr.setColor(white);
+            scr.setColor(RGB_White);
         }
 
         if (simulate || step) {
@@ -347,13 +347,23 @@ int main(int argc, char* argv[]) {
     
         old_time = time;
         time = getTicks();
+
+        fps_counter++;
+        if (fps_counter == frames_per_fps_show) {
+            static unsigned int fps_start_time = 0;
+            ostringstream strout;
+            strout << fixed << setprecision(2) << 1000.0 * frames_per_fps_show / (time - fps_start_time);
+            fps = strout.str();
+            fps_counter = 0;
+            fps_start_time = time;
+        }
+
+        // Display messages
         if (show_fps) {
-            scr.print(1000.0 / (time - old_time));
-        } else {
-            // Display messages
-            if (time < end_print_time) {
-                scr.print(message);
-            }
+            scr.print(fps, scr.width - 8 * fps.size(), 0, RGB_White, 1, RGB_Black, 5);
+        }
+        if (time < end_print_time) {
+            scr.print(message, 0, 0, RGB_White, 1);
         }
         scr.redraw(); // Draw SDL pixel buffer
 

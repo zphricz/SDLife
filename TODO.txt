@@ -2,4 +2,5 @@
 - Parallelize code (determination of new cell states/rendering)
 - Move key checking code somewhere else
 - Fix extended_neighbors
-- Reorganize what code goes where (quickcg should be broken up)
+- Make the cells operate with single dimension array logic
+- Add support for rendering text

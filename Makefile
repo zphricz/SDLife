@@ -1,17 +1,17 @@
+CXXFLAGS = -std=c++11 -Ofast -pg
+LDFLAGS = -lSDL2
+OS:= $(shell uname -s)
 
-CXXFLAGS=-std=c++11 -Ofast -pg
-# MAC
-LDFLAGS=-lSDL -lSDLmain -framework Cocoa
-CXX=g++-4.9
-#CXX=clang++
-# Linux
-# LDFLAGS=-lSDL
-# CXX=g++
+ifeq ($(OS), Darwin)
+	LDFLAGS += -lSDL2main -framework Cocoa
+	CXX = g++-4.9
+endif
+ifeq ($(OS), Linux)
+	CXX = clang++
+endif
 
-life: quickcg.o main.o Game.o Screen.o
+life: main.o Game.o Screen.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o$@ $^
-
-#life: quickcg.o main.o Game.o
 
 clean:
 	rm -rf *.o life

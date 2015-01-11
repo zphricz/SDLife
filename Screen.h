@@ -1,49 +1,67 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#include <string>
-#include "quickcg.h"
+#include <SDL2/SDL.h>
 
-using namespace QuickCG;
+#define VSYNC 1
 
-using std::string;
+struct Color {
+    Uint8 r;
+    Uint8 g;
+    Uint8 b;
+};
 
-class Screen
-{
+class Screen {
     private:
-        SDL_Surface * scr;
-        Uint32 colorSDL;
+        Uint32* const pixels;
+        Uint32 default_color;
+        SDL_Window* window;
+        SDL_Renderer* renderer;
+        SDL_Texture* texture;
 
-        void drawLetter(unsigned char n, int x, int y, const ColorRGB& color, bool bg, const ColorRGB& color2);
-        int printString(const std::string& text, int x, int y, const ColorRGB& color, bool bg, const ColorRGB& color2, int forceLength);
+        inline Uint32& pixel_at(int x, int y);
+        inline Uint32 format_color(Color c);
+        void hor_line_helper(int y, int x1, int x2, Uint32 c);
+        void ver_line_helper(int x, int y1, int y2, Uint32 c);
+        void draw_rect_helper(int x1, int y1, int x2, int y2, Uint32 c);
+        void fill_rect_helper(int x1, int y1, int x2, int y2, Uint32 c);
+        void draw_line_helper(int x1, int y1, int x2, int y2, Uint32 c);
+        void draw_circle_helper(int x, int y, int r, Uint32 c);
+        void fill_circle_helper(int x, int y, int r, Uint32 c);
+
     public:
         const int width;
         const int height;
-        Screen(int w, int h, bool full, string name);
-        ~Screen();
-        void redraw();
-        void cls(const ColorRGB& color = RGB_Black);
-        void setColor(const ColorRGB& color);
-        void pset(int x, int y);
-        void pset(int x, int y, const ColorRGB& color);
-        ColorRGB pget(int x, int y);
-        void drawBuffer(Uint32* buffer);
-        void getScreenBuffer(std::vector<Uint32>& buffer);
-        bool onScreen(int x, int y);
-        bool horLine(int y, int x1, int x2);
-        bool verLine(int x, int y1, int y2);
-        bool drawLine(int x1, int y1, int x2, int y2);
-        bool drawCircle(int xc, int yc, int radius);
-        bool drawDisk(int xc, int yc, int radius);
-        bool drawRect(int x1, int y1, int x2, int y2);
-        int findRegion(int x, int y);
-        bool clipLine(int x1, int y1, int x2, int y2, int & x3, int & y3, int & x4, int & y4);
+        const int rshift;
+        const int gshift;
+        const int bshift;
 
-        template<typename T>
-        int print(const T& val, int x = 0, int y = 0, const ColorRGB& color = RGB_White, bool bg = 0, const ColorRGB& color2 = RGB_Black, int forceLength = 0) {
-            std::string text = valtostr(val);
-            return printString(text, x, y, color, bg, color2, forceLength);
-        }
+        Screen(int sx, int sy, bool fs, const char * name);
+        ~Screen();
+
+        void commit_screen();
+        bool on_screen(int x, int y);
+        void set_color(Uint8 r, Uint8 g, Uint8 b);
+        void set_color(Color c);
+        void set_pixel(int x, int y);
+        void set_pixel(int x, int y, Color c);
+        void cls();
+        void fill_screen();
+        void fill_screen(Color c);
+        void hor_line(int y, int x1, int x2);
+        void hor_line(int y, int x1, int x2, Color c);
+        void ver_line(int x, int y1, int y2);
+        void ver_line(int x, int y1, int y2, Color c);
+        void draw_rect(int x1, int y1, int x2, int y2);
+        void draw_rect(int x1, int y1, int x2, int y2, Color c);
+        void fill_rect(int x1, int y1, int x2, int y2);
+        void fill_rect(int x1, int y1, int x2, int y2, Color c);
+        void draw_line(int x1, int y1, int x2, int y2);
+        void draw_line(int x1, int y1, int x2, int y2, Color c);
+        void draw_circle(int x, int y, int r);
+        void draw_circle(int x, int y, int r, Color c);
+        void fill_circle(int x, int y, int r);
+        void fill_circle(int x, int y, int r, Color c);
 };
 
 #endif

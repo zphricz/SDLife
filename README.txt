@@ -30,7 +30,7 @@ You can interact with the project by pressing keys on your keyboard:
 
     Other Options
     -------------
-    2: Switch boundary modes (PACMAND vs DEAD vs ALIVE)
+    2: Switch boundary modes (PACMAN vs DEAD vs ALIVE)
     3: Flip drawing live cells in colors or in white
     4: Move colors ahead somewhat
     5: Switch between displaying FPS and not
@@ -49,7 +49,5 @@ You can also interact by using your mouse:
 Authors
 -------
 
-The logic begind the cellular automata was written by me, Zack Hricz. The
-wrapper functions found in quickcg.h and quickcg.c were written by Lode
-Vadevenne and modified by Zack Hricz.
+Zack Hricz
 

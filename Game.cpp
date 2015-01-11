@@ -14,10 +14,10 @@ void Game::conway(int x, int y) {
     case 2:
         next_cell_at(x, y) = cell_at(x, y);
         break;
-    case 3:    
+    case 3:
         next_cell_at(x, y) = 1;
         break;
-    default:   
+    default:
         next_cell_at(x, y) = 0;
         break;
     }
@@ -29,7 +29,7 @@ void Game::seeds(int x, int y) {
     case 2:
         next_cell_at(x, y) = !cell_at(x, y);
         break;
-    default:   
+    default:
         next_cell_at(x, y) = 0;
         break;
     }
@@ -41,31 +41,11 @@ void Game::blotches(int x, int y) {
     case 2:
         next_cell_at(x, y) = rand() % 2;
         break;
-    default:   
+    default:
         next_cell_at(x, y) = cell_at(x, y);
         break;
     }
 }
-
-/*void Game::blotches(int x, int y) {
-    //int num_neighbors = moore_neighbors(x, y);
-    int num_neighbors = extended_neighbors(x, y, 2);
-    switch (num_neighbors) {
-    case 3:
-        next_cell_at(x, y) = cell_at(x, y) || (rand() % 100 < 50);
-        break;
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-        next_cell_at(x, y) = 1;
-        break;
-    default:   
-        next_cell_at(x, y) = cell_at(x, y);
-        break;
-    }
-}*/
 
 void Game::diamonds(int x, int y) {
     int num_neighbors = moore_neighbors(x, y);
@@ -73,7 +53,7 @@ void Game::diamonds(int x, int y) {
     case 2:
         next_cell_at(x, y) = !cell_at(x, y);
         break;
-    default:   
+    default:
         next_cell_at(x, y) = cell_at(x, y);
         break;
     }
@@ -88,10 +68,10 @@ void Game::day_and_night(int x, int y) {
     case 8:
         next_cell_at(x, y) = 1;
         break;
-    case 4:    
+    case 4:
         next_cell_at(x, y) = cell_at(x, y);
         break;
-    default:   
+    default:
         next_cell_at(x, y) = 0;
         break;
     }
@@ -117,34 +97,10 @@ Game::~Game() {
 }
 
 bool& Game::cell_at(int x, int y) {
-#if 0
-    int index = (y + 1) * buff_width + (x + 1);
-    if (index >= buff_width * buff_height || index < 0) {
-        cout << "X: " << x << endl
-             << "Y: " << y << endl
-             << "INDEX: " << index << endl
-             << "WIDTH: " << buff_width << endl
-             << "HEIGHT: " << buff_height << endl
-             << "WIDTH * HEGIHT: " << buff_width * buff_height << endl;
-        exit(1);
-    }
-#endif
     return current_state[y * buff_width + x];
 }
 
 bool& Game::next_cell_at(int x, int y) {
-#if 0
-    int index = (y + 1) * buff_width + (x + 1);
-    if (index >= buff_width * buff_height || index < 0) {
-        cout << "X: " << x << endl
-             << "Y: " << y << endl
-             << "INDEX: " << index << endl
-             << "WIDTH: " << buff_width << endl
-             << "HEIGHT: " << buff_height << endl
-             << "WIDTH * HEGIHT: " << buff_width * buff_height << endl;
-        exit(1);
-    }
-#endif
     return next_state[y * buff_width + x];
 }
 
@@ -236,7 +192,7 @@ void Game::set_boundaries() {
 }
 
 void Game::init_cells(int percent) {
-    for(int y = 0; y < num_cells_y; ++y) { 
+    for(int y = 0; y < num_cells_y; ++y) {
         for(int x = 0; x < num_cells_x; ++x) {
             if (percent > rand() % 100) cell_at(x, y) = 1;
             else cell_at(x, y) = 0;
@@ -282,7 +238,10 @@ void Game::draw_cell(int x, int y) {
     int x_start = x * scr->width / num_cells_x;
     int y_end = (y + 1) * scr->height / num_cells_y - 1;
     int x_end = (x + 1) * scr->width / num_cells_x - 1;
-    scr->drawRect(x_start, y_start, x_end, y_end);
+    if (y_end < y_start || x_end < x_start) {
+        return;
+    }
+    scr->fill_rect(x_start, y_start, x_end, y_end);
 }
 
 void Game::draw_cells() {
@@ -295,7 +254,7 @@ void Game::draw_cells() {
     }
 }
 
-string Game::switch_game() {
+std::string Game::switch_game() {
     switch (game) {
     case CONWAY:
         game = SEEDS;
@@ -318,7 +277,7 @@ string Game::switch_game() {
     }
 }
 
-string Game::switch_boundary() {
+std::string Game::switch_boundary() {
     switch (boundary) {
     case PACMAN:
         boundary = DEAD;

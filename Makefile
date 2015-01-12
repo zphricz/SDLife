@@ -8,6 +8,7 @@ ifeq ($(OS), Darwin)
 endif
 ifeq ($(OS), Linux)
 	CXX = clang++
+	CXX = g++
 endif
 
 life: main.o Screen.o Game.o

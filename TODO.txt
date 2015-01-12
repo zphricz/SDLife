@@ -1,8 +1,4 @@
-- Split main.cpp up into multiple files
 - Currently 4 threads are spawned on every frame. Create a threadpool to make that
   better
-- Move key checking code somewhere else
 - Fix extended_neighbors
 - Add support for rendering text
-- Figure out why I can't compile in g++ on linux and why clang++ on linux
-  results in a seg fault

@@ -1,6 +1,8 @@
 - Split main.cpp up into multiple files
-- Parallelize code (determination of new cell states/rendering)
+- Currently 4 threads are spawned on every frame. Create a threadpool to make that
+  better
 - Move key checking code somewhere else
 - Fix extended_neighbors
-- Make the cells operate with single dimension array logic
 - Add support for rendering text
+- Figure out why I can't compile in g++ on linux and why clang++ on linux
+  results in a seg fault

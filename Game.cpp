@@ -2,10 +2,18 @@
 #include <iostream>
 #include <algorithm>
 #include "Game.h"
+#include <thread>
+#include <vector>
+
+using std::vector;
+using std::thread;
+using std::ref;
 
 using std::swap;
 using std::cout;
 using std::endl;
+
+const int num_slices = 4;
 
 // GAME DEFINITIONS
 void Game::conway(int x, int y) {
@@ -92,8 +100,8 @@ Game::Game(int num_x, int num_y, Screen * screen) :
 }
 
 Game::~Game() {
-    delete buffer_1;
-    delete buffer_2;
+    delete [] buffer_1;
+    delete [] buffer_2;
 }
 
 bool& Game::cell_at(int x, int y) {
@@ -200,34 +208,46 @@ void Game::init_cells(int percent) {
     }
 }
 
-void Game::iterate() {
-    set_boundaries();
-    const game_types hoisted_game = game;
-    for(int y = 0; y < num_cells_y; ++y) {
-        for(int x = 0; x < num_cells_x; ++x) {
+void Game::process_slice(Game& self, int slice) {
+    const GameTypeEnum hoisted_game = self.game;
+    int start = slice * self.num_cells_y / num_slices;
+    int end = (slice + 1) * self.num_cells_y / num_slices;
+    for (int y = start; y < end; y++) {
+        for(int x = 0; x < self.num_cells_x; ++x) {
             switch (hoisted_game) {
             case CONWAY:
-                conway(x, y);
+                self.conway(x, y);
                 break;
             case SEEDS:
-                seeds(x, y);
+                self.seeds(x, y);
                 break;
             case DIAMONDS:
-                diamonds(x, y);
+                self.diamonds(x, y);
                 break;
             case BLOTCHES:
-                blotches(x, y);
+                self.blotches(x, y);
                 break;
             case DAY_AND_NIGHT:
-                day_and_night(x, y);
+                self.day_and_night(x, y);
                 break;
             default:
                 break;
             }
-            if (cell_at(x, y)) {
-                draw_cell(x, y);
+            if (self.cell_at(x, y)) {
+                self.draw_cell(x, y);
             }
         }
+    }
+}
+
+void Game::iterate() {
+    set_boundaries();
+    vector<thread> threads;
+    for (int slice = 0; slice < num_slices; ++slice) {
+        threads.push_back(thread(process_slice, ref(*this), slice));
+    }
+    for (auto& thread : threads) {
+        thread.join();
     }
     // Commit new_state
     swap(next_state, current_state);

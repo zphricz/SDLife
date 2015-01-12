@@ -4,8 +4,8 @@
 #include <string>
 #include "Screen.h"
 
-typedef enum {CONWAY, SEEDS, DIAMONDS, BLOTCHES, DAY_AND_NIGHT} game_types;
-typedef enum {PACMAN, DEAD, ALIVE} boundary_types;
+typedef enum {CONWAY, SEEDS, DIAMONDS, BLOTCHES, DAY_AND_NIGHT} GameTypeEnum;
+typedef enum {PACMAN, DEAD, ALIVE} BoundaryTypeEnum;
 
 class Game {
 private:
@@ -15,8 +15,8 @@ private:
     bool * const buffer_2;
     bool * current_state;
     bool * next_state;
-    game_types game;
-    boundary_types boundary;
+    GameTypeEnum game;
+    BoundaryTypeEnum boundary;
     Screen * const scr;
 
     // Games
@@ -26,6 +26,7 @@ private:
     void diamonds(int x, int y);
     void day_and_night(int x, int y);
 
+    static void process_slice(Game& self, int slice);
     int moore_neighbors(int x, int y);
     int extended_neighbors(int x, int y, int levels);
     bool& next_cell_at(int x, int y);

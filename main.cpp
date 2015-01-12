@@ -169,10 +169,18 @@ int main(int argc, char* argv[]) {
                 }
                 case SDLK_RETURN: {
                     simulate = !simulate;
+                    if (simulate) {
+                        cout << "STARTING SIMULATION" << endl;
+                    } else {
+                        cout << "STOPPING SIMULATION" << endl;
+                    }
                     break;
                 }
                 case SDLK_SPACE: {
                     step = true;
+                    if (!simulate) {
+                        cout << "SINGLE STEP" << endl;
+                    }
                     break;
                 }
                 case SDLK_1: {
@@ -258,8 +266,8 @@ int main(int argc, char* argv[]) {
                 int end_cell_y = end_y * num_cells_y / screen_height;
                 int dx = end_cell_x - start_cell_x;
                 int dy = end_cell_y - start_cell_y;
-                const bool left_click = event.motion.state & SDL_BUTTON_LMASK;
-                const bool right_click = event.motion.state & SDL_BUTTON_RMASK;
+                bool left_click = event.motion.state & SDL_BUTTON_LMASK;
+                bool right_click = event.motion.state & SDL_BUTTON_RMASK;
                 if (!left_click && !right_click) {
                     break;
                 }
@@ -283,6 +291,11 @@ int main(int argc, char* argv[]) {
                             g.cell_at(x, y) = 0;
                         }
                     }
+                }
+                if (left_click) {
+                    g.cell_at(end_cell_x, end_cell_y) = 1;
+                } else {
+                    g.cell_at(end_cell_x, end_cell_y) = 0;
                 }
                 break;
             }

@@ -27,6 +27,8 @@ private:
     Uint32 fps_start_time;
     int fps_counter;
     bool running;
+    bool clear_dead_cells;
+    int image_number;
 
     // Games
     void conway(int x, int y);

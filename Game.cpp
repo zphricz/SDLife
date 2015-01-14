@@ -154,6 +154,8 @@ Game::Game(int num_x, int num_y, Screen * screen) :
     do_color = true;
     fps_counter = 0;
     running = true;
+    clear_dead_cells = true;
+    image_number = 0;
 }
 
 Game::~Game() {
@@ -290,9 +292,6 @@ void Game::process_slice(Game& self, int slice) {
             default:
                 break;
             }
-            if (self.cell_at(x, y)) {
-                self.draw_cell(x, y);
-            }
         }
     }
 }
@@ -427,6 +426,18 @@ void Game::handle_input() {
                 show_fps = !show_fps;
                 break;
             }
+            case SDLK_6: {
+                clear_dead_cells = !clear_dead_cells;
+                break;
+            }
+            case SDLK_7: {
+                ostringstream convert;
+                convert << image_number;
+                string name = "image_" + convert.str() + ".tga";
+                scr->write_tga(name.c_str());
+                image_number++;
+                break;
+            }
             case SDLK_LEFT: {
                 rand_percent = 0;
                 init_cells(rand_percent);
@@ -538,7 +549,6 @@ void Game::run() {
     // Main loop
     while (running) {
         handle_input();
-        scr->cls();
         if (do_color) {
             scr->set_color(color);
         } else {
@@ -548,8 +558,9 @@ void Game::run() {
             iterate();
             change_color(2);
             step = false;
-        } else {
-            draw_cells();
+        } else if (scr->direct_draw) {
+            // Wait for a bit so that the renderer can finish drawing
+            SDL_Delay(1);
         }
         fps_counter++;
         if (fps_counter == frames_per_fps_show) {
@@ -562,6 +573,10 @@ void Game::run() {
             fps_counter = 0;
             fps_start_time = current_time;
         }
+        if (clear_dead_cells) {
+            scr->cls();
+        }
+        draw_cells();
         scr->commit_screen(); // Draw SDL pixel buffer
     }
     return;

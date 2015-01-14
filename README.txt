@@ -16,7 +16,7 @@ resolution to render at with command line arguments:
 
     ./life [Board_x Board_y] [Screen_x Screen_y]
 
-You can interact with the project by pressing keys on your keyboard:
+You can interact with the simulation  by pressing keys on your keyboard:
 
     Simulation modes
     ----------------
@@ -34,6 +34,8 @@ You can interact with the project by pressing keys on your keyboard:
     3: Flip drawing live cells in colors or in white
     4: Move colors ahead somewhat
     5: Switch between displaying FPS and not
+    6: Switch between drawing dead cells and not
+    7: Draw a .tga image of the current state of the screen
     left arrow: Initialize cells with all dead
     right arrow: initialize cells with all alive
     enter: Pause/start simulation
@@ -45,6 +47,8 @@ You can also interact by using your mouse:
 
     LMB: Make a cell alive
     RMB: Make a cell dead
+
+To close the program, press the escape key.
 
 Authors
 -------

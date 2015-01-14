@@ -5,8 +5,8 @@ Overview
 --------
 
 This program simulates life-like cellular automata with graphics rendered using
-SDL. Much of the SDL code is wrapped by some convenience functions found in 
-quickcg.h and quickcg.c. To run the program, simply run:
+SDL2. The rendering is performed in software by the Screen class which acts as
+a wrapper for SDL funtionality. To run the program, simply run:
 
     ./life
 

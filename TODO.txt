@@ -2,4 +2,3 @@
   better
 - Fix extended_neighbors
 - Add support for rendering text
-- Figure out why memset doesn't work on locked texture

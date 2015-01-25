@@ -24,8 +24,8 @@ You can interact with the simulation  by pressing keys on your keyboard:
     order:
         - Conway's Game of Life
         - Seeds
-        - Diamonds
-        - Blotches
+        - Walled Cities
+        - Gnarl
         - Day and Night
 
     Other Options

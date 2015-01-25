@@ -3,7 +3,7 @@
 
 #include "Screen.h"
 
-typedef enum {CONWAY, SEEDS, DIAMONDS, BLOTCHES, DAY_AND_NIGHT} GameTypeEnum;
+typedef enum {CONWAY, SEEDS, GNARL, WALLED_CITIES, DAY_AND_NIGHT} GameTypeEnum;
 typedef enum {PACMAN, DEAD, ALIVE} BoundaryTypeEnum;
 
 class Game {
@@ -12,6 +12,7 @@ private:
     const int num_cells_y;
     const int buff_width;
     const int buff_height;
+    const int num_threads;
     bool * const buffer_1;
     bool * const buffer_2;
     bool * current_state;
@@ -33,10 +34,11 @@ private:
     // Games
     void conway(int x, int y);
     void seeds(int x, int y);
-    void blotches(int x, int y);
-    void diamonds(int x, int y);
+    void walled_cities(int x, int y);
+    void gnarl(int x, int y);
     void day_and_night(int x, int y);
 
+    static void thread_func(Game& self);
     static void process_slice(Game& self, int slice);
     int moore_neighbors(int x, int y);
     int extended_neighbors(int x, int y, int levels);
@@ -52,7 +54,7 @@ private:
     void handle_input();
 
 public:
-    Game(int num_x, int num_y, Screen * screen);
+    Game(int num_x, int num_y, Screen * screen, int num_threads);
     ~Game();
     void run();
 };

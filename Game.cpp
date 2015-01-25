@@ -5,11 +5,11 @@
 #include <algorithm>
 #include <thread>
 #include <vector>
+#include <future>
 #include "Game.h"
 
 using namespace std;
 
-const int num_slices = 4;
 const Uint32 frames_per_fps_show = 5;
 static Color color{255, 0, 0}; // Start as red
 static enum {UP_GREEN,   DOWN_RED, UP_BLUE,
@@ -93,26 +93,33 @@ void Game::seeds(int x, int y) {
     }
 }
 
-void Game::blotches(int x, int y) {
+void Game::walled_cities(int x, int y) {
     int num_neighbors = moore_neighbors(x, y);
     switch (num_neighbors) {
     case 2:
-        next_cell_at(x, y) = rand() % 2;
+    case 3:
+    case 7:
+    case 8:
+        next_cell_at(x, y) = cell_at(x, y);
+        break;
+    case 4:
+    case 5:
+        next_cell_at(x, y) = 1;
         break;
     default:
-        next_cell_at(x, y) = cell_at(x, y);
+        next_cell_at(x, y) = 0;
         break;
     }
 }
 
-void Game::diamonds(int x, int y) {
+void Game::gnarl(int x, int y) {
     int num_neighbors = moore_neighbors(x, y);
     switch (num_neighbors) {
-    case 2:
-        next_cell_at(x, y) = !cell_at(x, y);
+    case 1:
+        next_cell_at(x, y) = 1;
         break;
     default:
-        next_cell_at(x, y) = cell_at(x, y);
+        next_cell_at(x, y) = 0;
         break;
     }
 }
@@ -135,11 +142,12 @@ void Game::day_and_night(int x, int y) {
     }
 }
 
-Game::Game(int num_x, int num_y, Screen * screen) :
+Game::Game(int num_x, int num_y, Screen * screen, int num_threads) :
     num_cells_x(num_x),
     num_cells_y(num_y),
     buff_width(num_x + 2),
     buff_height(num_y + 2),
+    num_threads(num_threads), 
     buffer_1(new bool[buff_width * buff_height]),
     buffer_2(new bool[buff_width * buff_height]),
     scr(screen) {
@@ -269,8 +277,8 @@ void Game::init_cells(int percent) {
 
 void Game::process_slice(Game& self, int slice) {
     const GameTypeEnum hoisted_game = self.game;
-    int start = slice * self.num_cells_y / num_slices;
-    int end = (slice + 1) * self.num_cells_y / num_slices;
+    int start = slice * self.num_cells_y / self.num_threads;
+    int end = (slice + 1) * self.num_cells_y / self.num_threads;
     for (int y = start; y < end; y++) {
         for(int x = 0; x < self.num_cells_x; ++x) {
             switch (hoisted_game) {
@@ -280,11 +288,11 @@ void Game::process_slice(Game& self, int slice) {
             case SEEDS:
                 self.seeds(x, y);
                 break;
-            case DIAMONDS:
-                self.diamonds(x, y);
+            case GNARL:
+                self.gnarl(x, y);
                 break;
-            case BLOTCHES:
-                self.blotches(x, y);
+            case WALLED_CITIES:
+                self.walled_cities(x, y);
                 break;
             case DAY_AND_NIGHT:
                 self.day_and_night(x, y);
@@ -298,15 +306,14 @@ void Game::process_slice(Game& self, int slice) {
 
 void Game::iterate() {
     set_boundaries();
-    vector<thread> threads;
-    for (int slice = 0; slice < num_slices; ++slice) {
-        threads.push_back(thread(process_slice, ref(*this), slice));
+    vector<future<void>> futures;
+    for (int i = 0; i < num_threads; ++i) {
+        futures.push_back(async(launch::async, process_slice, ref(*this), i));
     }
-    for (auto& thread : threads) {
-        thread.join();
+    for (auto& f: futures) {
+        f.get();
     }
-    // Commit new_state
-    swap(next_state, current_state);
+    swap(next_state, current_state); // Commit new_state
 }
 
 void Game::draw_cell(int x, int y) {
@@ -337,14 +344,14 @@ void Game::switch_game() {
         cout << "SEEDS" << endl;
         break;
     case SEEDS:
-        game = DIAMONDS;
-        cout << "DIAMONDS" << endl;
+        game = GNARL;
+        cout << "GNARL" << endl;
         break;
-    case DIAMONDS:
-        game = BLOTCHES;
-        cout << "BLOTCHES" << endl;
+    case GNARL:
+        game = WALLED_CITIES;
+        cout << "WALLED CITIES" << endl;
         break;
-    case BLOTCHES:
+    case WALLED_CITIES:
         game = DAY_AND_NIGHT;
         cout << "DAY AND NIGHT" << endl;
         break;
@@ -384,6 +391,10 @@ void Game::handle_input() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
+        case SDL_QUIT: {
+            running = false;
+            break;
+        }
         case SDL_KEYDOWN: {
             switch (event.key.keysym.sym) {
             case SDLK_ESCAPE: {
@@ -560,7 +571,7 @@ void Game::run() {
             step = false;
         } else if (scr->direct_draw) {
             // Wait for a bit so that the renderer can finish drawing
-            SDL_Delay(1);
+            SDL_Delay(2);
         }
         fps_counter++;
         if (fps_counter == frames_per_fps_show) {

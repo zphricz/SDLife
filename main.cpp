@@ -7,9 +7,11 @@
 using namespace std;
 
 static void error(char * name) {
-    printf("Usage: %s [Board_x Board_y] [Screen_x Screen_y] [nthreads = 4]\n", name);
+    printf("Usage: %s [Board_x Board_y] [Screen_x Screen_y] [nthreads = %d]\n",
+            name, thread::hardware_concurrency());
     exit(1);
 }
+
 int main(int argc, char* argv[]) {
     bool default_screen;
     bool default_cells;
@@ -65,7 +67,8 @@ int main(int argc, char* argv[]) {
         default_screen = false;
         default_cells = false;
         default_threads = false;
-        if (num_cells_x <= 0 || num_cells_y <= 0 || screen_width <= 0 || screen_height <= 0) {
+        if (num_cells_x <= 0 || num_cells_y <= 0 ||
+            screen_width <= 0 || screen_height <= 0) {
             error(argv[0]);
         }
         break;

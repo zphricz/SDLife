@@ -36,6 +36,7 @@ You can interact with the simulation  by pressing keys on your keyboard:
     5: Switch between displaying FPS and not
     6: Switch between drawing dead cells and not
     7: Draw a .tga image of the current state of the screen
+    0: Toggle between recording video and not
     left arrow: Initialize cells with all dead
     right arrow: initialize cells with all alive
     enter: Pause/start simulation

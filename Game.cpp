@@ -163,7 +163,7 @@ Game::Game(int num_x, int num_y, Screen * screen, int num_threads) :
     fps_counter = 0;
     running = true;
     clear_dead_cells = true;
-    image_number = 0;
+    scr->set_recording_style("images", 5);
 }
 
 Game::~Game() {
@@ -307,6 +307,7 @@ void Game::process_slice(Game& self, int slice) {
 void Game::iterate() {
     set_boundaries();
     vector<future<void>> futures;
+    futures.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
         futures.push_back(async(launch::async, process_slice, ref(*this), i));
     }
@@ -327,13 +328,26 @@ void Game::draw_cell(int x, int y) {
     scr->fill_rect(x_start, y_start, x_end, y_end);
 }
 
-void Game::draw_cells() {
-    for(int y = 0; y < num_cells_y; ++y) {
-        for(int x = 0; x < num_cells_x; ++x) {
-            if (cell_at(x, y)) {
-                draw_cell(x, y);
+void Game::draw_cell_slice(Game& self, int slice) {
+    int start = slice * self.num_cells_y / self.num_threads;
+    int end = (slice + 1) * self.num_cells_y / self.num_threads;
+    for(int y = start; y < end; ++y) {
+        for(int x = 0; x < self.num_cells_x; ++x) {
+            if (self.cell_at(x, y)) {
+                self.draw_cell(x, y);
             }
         }
+    }
+}
+
+void Game::draw_cells() {
+    vector<future<void>> futures;
+    futures.reserve(num_threads);
+    for (int i = 0; i < num_threads; ++i) {
+        futures.push_back(async(launch::async, draw_cell_slice, ref(*this), i));
+    }
+    for (auto& f: futures) {
+        f.get();
     }
 }
 
@@ -449,6 +463,10 @@ void Game::handle_input() {
                 image_number++;
                 break;
             }
+            case SDLK_0: {
+                scr->toggle_recording();
+                break;
+            }
             case SDLK_LEFT: {
                 rand_percent = 0;
                 init_cells(rand_percent);
@@ -559,7 +577,6 @@ void Game::run() {
 
     // Main loop
     while (running) {
-        handle_input();
         if (do_color) {
             scr->set_color(color);
         } else {
@@ -577,7 +594,8 @@ void Game::run() {
         if (fps_counter == frames_per_fps_show) {
             Uint32 current_time = SDL_GetTicks();
             ostringstream strout;
-            strout << fixed << setprecision(2) << 1000.0 * frames_per_fps_show / (current_time - fps_start_time);
+            strout << fixed << setprecision(2) << 1000.0 * frames_per_fps_show /
+                (current_time - fps_start_time);
             if (show_fps) {
                 cout << "FPS: " << strout.str() << endl;
             }
@@ -588,7 +606,8 @@ void Game::run() {
             scr->cls();
         }
         draw_cells();
-        scr->commit_screen(); // Draw SDL pixel buffer
+        handle_input();
+        scr->commit(); // Draw SDL pixel buffer
     }
     return;
 }

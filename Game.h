@@ -38,7 +38,7 @@ private:
     void gnarl(int x, int y);
     void day_and_night(int x, int y);
 
-    static void thread_func(Game& self);
+    static void draw_cell_slice(Game& self, int slice);
     static void process_slice(Game& self, int slice);
     int moore_neighbors(int x, int y);
     int extended_neighbors(int x, int y, int levels);

@@ -10,53 +10,47 @@
 
 using namespace std;
 
-const Uint32 frames_per_fps_show = 5;
-static Color color{255, 0, 0}; // Start as red
-static enum {UP_GREEN,   DOWN_RED, UP_BLUE,
-             DOWN_GREEN, UP_RED,   DOWN_BLUE
-            } color_state = UP_GREEN;
-
-static void change_color(int rate) {
+void Game::change_color(int rate) {
     switch (color_state) {
-    case UP_GREEN:
+    case ColorState::UP_GREEN:
         if ((int)color.g + rate >= 255) {
             color.g = 255;
-            color_state = DOWN_RED;
+            color_state = ColorState::DOWN_RED;
         } else
             color.g += rate;
         break;
-    case DOWN_RED:
+    case ColorState::DOWN_RED:
         if ((int)color.r - rate <= 0) {
             color.r = 0;
-            color_state = UP_BLUE;
+            color_state = ColorState::UP_BLUE;
         } else
             color.r -= rate;
         break;
-    case UP_BLUE:
+    case ColorState::UP_BLUE:
         if ((int)color.b + rate >= 255) {
             color.b = 255;
-            color_state = DOWN_GREEN;
+            color_state = ColorState::DOWN_GREEN;
         } else
             color.b += rate;
         break;
-    case DOWN_GREEN:
+    case ColorState::DOWN_GREEN:
         if ((int)color.g - rate <= 0) {
             color.g = 0;
-            color_state = UP_RED;
+            color_state = ColorState::UP_RED;
         } else
             color.g -= rate;
         break;
-    case UP_RED:
+    case ColorState::UP_RED:
         if ((int)color.r + rate >= 255) {
             color.r = 255;
-            color_state = DOWN_BLUE;
+            color_state = ColorState::DOWN_BLUE;
         } else
             color.r += rate;
         break;
-    case DOWN_BLUE:
+    case ColorState::DOWN_BLUE:
         if ((int)color.b - rate <= 0) {
             color.b = 0;
-            color_state = UP_GREEN;
+            color_state = ColorState::UP_GREEN;
         } else
             color.b -= rate;
         break;
@@ -153,14 +147,15 @@ Game::Game(int num_x, int num_y, Screen * screen, int num_threads) :
     scr(screen) {
     current_state = buffer_1 + buff_width + 1;
     next_state = buffer_2 + buff_width + 1;
-    game = DAY_AND_NIGHT;
-    boundary = PACMAN;
+    game = GameType::DAY_AND_NIGHT;
+    boundary = BoundaryType::PACMAN;
+    color_state = ColorState::UP_GREEN;
+    color = {255, 0, 0};
     show_fps = true;
     rand_percent = 50;
     step = false;
     simulate = false;
     do_color = true;
-    fps_counter = 0;
     running = true;
     clear_dead_cells = true;
     scr->set_recording_style("images", 5);
@@ -219,7 +214,7 @@ int Game::extended_neighbors(int x, int y, int levels) {
 
 void Game::set_boundaries() {
     switch(boundary) {
-    case PACMAN:
+    case BoundaryType::PACMAN:
         cell_at(-1, -1) = cell_at(num_cells_x - 1, num_cells_y - 1);
         cell_at(num_cells_x, -1) = cell_at(0, num_cells_y - 1);
         cell_at(-1, num_cells_y) = cell_at(num_cells_x - 1, 0);
@@ -233,7 +228,7 @@ void Game::set_boundaries() {
             cell_at(num_cells_x, y) = cell_at(0, y);
         }
         break;
-    case ALIVE:
+    case BoundaryType::ALIVE:
         cell_at(-1, -1) = 1;
         cell_at(num_cells_x, -1) = 1;
         cell_at(-1, num_cells_y) = 1;
@@ -247,7 +242,7 @@ void Game::set_boundaries() {
             cell_at(num_cells_x, y) = 1;
         }
         break;
-    case DEAD:
+    case BoundaryType::DEAD:
         cell_at(-1, -1) = 0;
         cell_at(num_cells_x, -1) = 0;
         cell_at(-1, num_cells_y) = 0;
@@ -275,27 +270,27 @@ void Game::init_cells(int percent) {
     }
 }
 
-void Game::process_slice(Game& self, int slice) {
-    const GameTypeEnum hoisted_game = self.game;
-    int start = slice * self.num_cells_y / self.num_threads;
-    int end = (slice + 1) * self.num_cells_y / self.num_threads;
+void Game::iterate_slice(int slice) {
+    const GameType hoisted_game = game;
+    int start = slice * num_cells_y / num_threads;
+    int end = (slice + 1) * num_cells_y / num_threads;
     for (int y = start; y < end; y++) {
-        for(int x = 0; x < self.num_cells_x; ++x) {
+        for(int x = 0; x < num_cells_x; ++x) {
             switch (hoisted_game) {
-            case CONWAY:
-                self.conway(x, y);
+            case GameType::CONWAY:
+                conway(x, y);
                 break;
-            case SEEDS:
-                self.seeds(x, y);
+            case GameType::SEEDS:
+                seeds(x, y);
                 break;
-            case GNARL:
-                self.gnarl(x, y);
+            case GameType::GNARL:
+                gnarl(x, y);
                 break;
-            case WALLED_CITIES:
-                self.walled_cities(x, y);
+            case GameType::WALLED_CITIES:
+                walled_cities(x, y);
                 break;
-            case DAY_AND_NIGHT:
-                self.day_and_night(x, y);
+            case GameType::DAY_AND_NIGHT:
+                day_and_night(x, y);
                 break;
             default:
                 break;
@@ -309,7 +304,7 @@ void Game::iterate() {
     vector<future<void>> futures;
     futures.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
-        futures.push_back(async(launch::async, process_slice, ref(*this), i));
+        futures.push_back(async(launch::async, &Game::iterate_slice, this, i));
     }
     for (auto& f: futures) {
         f.get();
@@ -328,13 +323,13 @@ void Game::draw_cell(int x, int y) {
     scr->fill_rect(x_start, y_start, x_end, y_end);
 }
 
-void Game::draw_cell_slice(Game& self, int slice) {
-    int start = slice * self.num_cells_y / self.num_threads;
-    int end = (slice + 1) * self.num_cells_y / self.num_threads;
+void Game::draw_slice(int slice) {
+    int start = slice * num_cells_y / num_threads;
+    int end = (slice + 1) * num_cells_y / num_threads;
     for(int y = start; y < end; ++y) {
-        for(int x = 0; x < self.num_cells_x; ++x) {
-            if (self.cell_at(x, y)) {
-                self.draw_cell(x, y);
+        for(int x = 0; x < num_cells_x; ++x) {
+            if (cell_at(x, y)) {
+                draw_cell(x, y);
             }
         }
     }
@@ -344,7 +339,7 @@ void Game::draw_cells() {
     vector<future<void>> futures;
     futures.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
-        futures.push_back(async(launch::async, draw_cell_slice, ref(*this), i));
+        futures.push_back(async(launch::async, &Game::draw_slice, this, i));
     }
     for (auto& f: futures) {
         f.get();
@@ -353,28 +348,28 @@ void Game::draw_cells() {
 
 void Game::switch_game() {
     switch (game) {
-    case CONWAY:
-        game = SEEDS;
+    case GameType::CONWAY:
+        game = GameType::SEEDS;
         cout << "SEEDS" << endl;
         break;
-    case SEEDS:
-        game = GNARL;
+    case GameType::SEEDS:
+        game = GameType::GNARL;
         cout << "GNARL" << endl;
         break;
-    case GNARL:
-        game = WALLED_CITIES;
+    case GameType::GNARL:
+        game = GameType::WALLED_CITIES;
         cout << "WALLED CITIES" << endl;
         break;
-    case WALLED_CITIES:
-        game = DAY_AND_NIGHT;
+    case GameType::WALLED_CITIES:
+        game = GameType::DAY_AND_NIGHT;
         cout << "DAY AND NIGHT" << endl;
         break;
-    case DAY_AND_NIGHT:
-        game = CONWAY;
+    case GameType::DAY_AND_NIGHT:
+        game = GameType::CONWAY;
         cout << "CONWAY" << endl;
         break;
     default:
-        game = CONWAY;
+        game = GameType::CONWAY;
         cout << "CONWAY" << endl;
         break;
     }
@@ -382,20 +377,20 @@ void Game::switch_game() {
 
 void Game::switch_boundary() {
     switch (boundary) {
-    case PACMAN:
-        boundary = DEAD;
+    case BoundaryType::PACMAN:
+        boundary = BoundaryType::DEAD;
         cout << "DEAD BORDERS" << endl;
         break;
-    case DEAD:
-        boundary = ALIVE;
+    case BoundaryType::DEAD:
+        boundary = BoundaryType::ALIVE;
         cout << "ALIVE BORDERS" << endl;
         break;
-    case ALIVE:
-        boundary = PACMAN;
+    case BoundaryType::ALIVE:
+        boundary = BoundaryType::PACMAN;
         cout << "PACMAN BORDERS" << endl;
         break;
     default:
-        boundary = PACMAN;
+        boundary = BoundaryType::PACMAN;
         cout << "PACMAN BORDERS" << endl;
         break;
     }
@@ -470,17 +465,13 @@ void Game::handle_input() {
             case SDLK_LEFT: {
                 rand_percent = 0;
                 init_cells(rand_percent);
-                ostringstream convert;
-                convert << rand_percent;
-                cout << "RAND_PERCENT: " << convert.str() << "%" << endl;
+                cout << "RAND_PERCENT: " << rand_percent << "%" << endl;
                 break;
             }
             case SDLK_RIGHT: {
                 rand_percent = 100;
                 init_cells(rand_percent);
-                ostringstream convert;
-                convert << rand_percent;
-                cout << "RAND_PERCENT: " << convert.str() << "%" << endl;
+                cout << "RAND_PERCENT: " << rand_percent << "%" << endl;
                 break;
             }
             case SDLK_UP: {
@@ -488,9 +479,7 @@ void Game::handle_input() {
                     rand_percent++;
                 }
                 init_cells(rand_percent);
-                ostringstream convert;
-                convert << rand_percent;
-                cout << "RAND_PERCENT: " << convert.str() << "%" << endl;
+                cout << "RAND_PERCENT: " << rand_percent << "%" << endl;
                 break;
             }
             case SDLK_DOWN: {
@@ -498,9 +487,7 @@ void Game::handle_input() {
                     rand_percent--;
                 }
                 init_cells(rand_percent);
-                ostringstream convert;
-                convert << rand_percent;
-                cout << "RAND_PERCENT: " << convert.str() << "%" << endl;
+                cout << "RAND_PERCENT: " << rand_percent << "%" << endl;
                 break;
             }
             default: {
@@ -570,10 +557,10 @@ void Game::handle_input() {
     }
 }
 
+
 void Game::run() {
     init_cells(rand_percent);
     cout << "DAY AND NIGHT" << endl;
-    fps_start_time = SDL_GetTicks();
 
     // Main loop
     while (running) {
@@ -590,17 +577,12 @@ void Game::run() {
             // Wait for a bit so that the renderer can finish drawing
             SDL_Delay(2);
         }
-        fps_counter++;
-        if (fps_counter == frames_per_fps_show) {
-            Uint32 current_time = SDL_GetTicks();
-            ostringstream strout;
-            strout << fixed << setprecision(2) << 1000.0 * frames_per_fps_show /
-                (current_time - fps_start_time);
+        static int fps_counter = 0;
+        if (fps_counter++ == 10) {
             if (show_fps) {
-                cout << "FPS: " << strout.str() << endl;
+                cout << "FPS: " << scr->fps() << endl;
             }
             fps_counter = 0;
-            fps_start_time = current_time;
         }
         if (clear_dead_cells) {
             scr->cls();
@@ -609,6 +591,5 @@ void Game::run() {
         handle_input();
         scr->commit(); // Draw SDL pixel buffer
     }
-    return;
 }
 

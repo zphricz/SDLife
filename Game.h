@@ -3,8 +3,10 @@
 
 #include "Screen.h"
 
-typedef enum {CONWAY, SEEDS, GNARL, WALLED_CITIES, DAY_AND_NIGHT} GameTypeEnum;
-typedef enum {PACMAN, DEAD, ALIVE} BoundaryTypeEnum;
+enum class GameType {CONWAY, SEEDS, GNARL, WALLED_CITIES, DAY_AND_NIGHT};
+enum class BoundaryType {PACMAN, DEAD, ALIVE};
+enum class ColorState {UP_GREEN, DOWN_RED, UP_BLUE,
+                       DOWN_GREEN, UP_RED, DOWN_BLUE };
 
 class Game {
 private:
@@ -17,16 +19,16 @@ private:
     bool * const buffer_2;
     bool * current_state;
     bool * next_state;
-    GameTypeEnum game;
-    BoundaryTypeEnum boundary;
+    GameType game;
+    BoundaryType boundary;
+    ColorState color_state;
+    Color color;
     Screen * const scr;
     bool show_fps;
     int rand_percent;
     bool step;
     bool simulate;
     bool do_color;
-    Uint32 fps_start_time;
-    int fps_counter;
     bool running;
     bool clear_dead_cells;
     int image_number;
@@ -38,8 +40,9 @@ private:
     void gnarl(int x, int y);
     void day_and_night(int x, int y);
 
-    static void draw_cell_slice(Game& self, int slice);
-    static void process_slice(Game& self, int slice);
+    void change_color(int rate);
+    void draw_slice(int slice);
+    void iterate_slice(int slice);
     int moore_neighbors(int x, int y);
     int extended_neighbors(int x, int y, int levels);
     bool& cell_at(int x, int y);
@@ -53,6 +56,7 @@ private:
     void switch_boundary();
     void handle_input();
 
+    void loop();
 public:
     Game(int num_x, int num_y, Screen * screen, int num_threads);
     ~Game();

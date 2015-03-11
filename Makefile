@@ -11,13 +11,14 @@ ifeq ($(OS), Darwin)
 	CXX = clang++
 endif
 ifeq ($(OS), Linux)
+	LDFLAGS += -lpthread
 	CXX = g++
 endif
 
 all: $(ELFNAME)
 
 $(ELFNAME): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o$@ $^
+	$(CXX) $(CXXFLAGS) -o$@ $^ $(LDFLAGS) 
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -MMD -MP $< -o $@

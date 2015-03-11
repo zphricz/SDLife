@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
         full_screen = false;
     }
 
-    Screen scr(screen_width, screen_height, full_screen, "Life", true, false, true);
+    PerfSoftScreen scr(screen_width, screen_height, "Life", full_screen, true);
     Game g(num_cells_x, num_cells_y, &scr, num_threads);
     g.run();
     return 0;

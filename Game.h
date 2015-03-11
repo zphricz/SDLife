@@ -22,8 +22,8 @@ private:
     GameType game;
     BoundaryType boundary;
     ColorState color_state;
-    Color color;
-    Screen * const scr;
+    SDL_Color color;
+    PerfSoftScreen * const scr;
     bool show_fps;
     int rand_percent;
     bool step;
@@ -58,7 +58,7 @@ private:
 
     void loop();
 public:
-    Game(int num_x, int num_y, Screen * screen, int num_threads);
+    Game(int num_x, int num_y, PerfSoftScreen * screen, int num_threads);
     ~Game();
     void run();
 };

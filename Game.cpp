@@ -136,7 +136,7 @@ void Game::day_and_night(int x, int y) {
     }
 }
 
-Game::Game(int num_x, int num_y, Screen * screen, int num_threads) :
+Game::Game(int num_x, int num_y, PerfSoftScreen * screen, int num_threads) :
     num_cells_x(num_x),
     num_cells_y(num_y),
     buff_width(num_x + 2),
@@ -561,6 +561,7 @@ void Game::handle_input() {
 void Game::run() {
     init_cells(rand_percent);
     cout << "DAY AND NIGHT" << endl;
+    int fps_counter = 0;
 
     // Main loop
     while (running) {
@@ -573,11 +574,10 @@ void Game::run() {
             iterate();
             change_color(2);
             step = false;
-        } else if (scr->direct_draw) {
+        } else if (scr->is_direct_draw()) {
             // Wait for a bit so that the renderer can finish drawing
             SDL_Delay(2);
         }
-        static int fps_counter = 0;
         if (fps_counter++ == 10) {
             if (show_fps) {
                 cout << "FPS: " << scr->fps() << endl;

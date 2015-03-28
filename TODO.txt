@@ -2,5 +2,3 @@
   better
 - Fix extended_neighbors
 - Add support for rendering text
-- Fix bug causing cells to be drawn outside of the range of the grid when in 
-  windowed mode

@@ -501,10 +501,15 @@ void Game::handle_input() {
       break;
     }
     case SDL_MOUSEMOTION: {
+      static int start_x = -1; // These need to be initialized to -1 so that
+      static int start_y = -1; // first time this case is executed, they can
+                               // be populated with correct values
       int end_x = event.motion.x;
       int end_y = event.motion.y;
-      int start_x = end_x - event.motion.xrel;
-      int start_y = end_y - event.motion.yrel;
+      if (start_x == -1) {
+        start_x = end_x - event.motion.xrel;
+        start_y = end_y - event.motion.yrel;
+      }
       int start_cell_x = start_x * num_cells_x / scr->width;
       int start_cell_y = start_y * num_cells_y / scr->height;
       int end_cell_x = end_x * num_cells_x / scr->width;
@@ -513,6 +518,8 @@ void Game::handle_input() {
       int dy = end_cell_y - start_cell_y;
       bool left_click = event.motion.state & SDL_BUTTON_LMASK;
       bool right_click = event.motion.state & SDL_BUTTON_RMASK;
+      start_x = end_x;
+      start_y = end_y;
       if (!left_click && !right_click) {
         break;
       }
@@ -520,33 +527,43 @@ void Game::handle_input() {
         int increment = dx < 0 ? -1 : 1;
         for (int x = start_cell_x; x != end_cell_x; x += increment) {
           int y = start_cell_y + dy * (x - start_cell_x) / dx;
-          if (left_click) {
-            cell_at(x, y) = 1;
-          } else {
-            cell_at(x, y) = 0;
+          if (in_bounds(x, y)) {
+            if (left_click) {
+              cell_at(x, y) = 1;
+            } else {
+              cell_at(x, y) = 0;
+            }
           }
         }
       } else {
         int increment = dy < 0 ? -1 : 1;
         for (int y = start_cell_y; y != end_cell_y; y += increment) {
           int x = start_cell_x + dx * (y - start_cell_y) / dy;
-          if (left_click) {
-            cell_at(x, y) = 1;
-          } else {
-            cell_at(x, y) = 0;
+          if (in_bounds(x, y)) {
+            if (left_click) {
+              cell_at(x, y) = 1;
+            } else {
+              cell_at(x, y) = 0;
+            }
           }
         }
       }
-      if (left_click) {
-        cell_at(end_cell_x, end_cell_y) = 1;
-      } else {
-        cell_at(end_cell_x, end_cell_y) = 0;
+      if (in_bounds(end_cell_x, end_cell_y)) {
+        if (left_click) {
+          cell_at(end_cell_x, end_cell_y) = 1;
+        } else {
+          cell_at(end_cell_x, end_cell_y) = 0;
+        }
       }
       break;
     }
     default: { break; }
     }
   }
+}
+
+bool Game::in_bounds(int x, int y) {
+  return x >= 0 && x < num_cells_x && y >= 0 && y < num_cells_y;
 }
 
 void Game::run() {

@@ -61,6 +61,7 @@ private:
   void switch_game();
   void switch_boundary();
   void handle_input();
+  bool in_bounds(int x, int y);
 
   void loop();
 

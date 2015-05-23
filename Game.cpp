@@ -3,9 +3,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
-#include <thread>
 #include <vector>
-#include <future>
 #include "Game.h"
 
 using namespace std;
@@ -138,9 +136,10 @@ void Game::day_and_night(int x, int y) {
 
 Game::Game(int num_x, int num_y, PerfSoftScreen *screen, int num_threads)
     : num_cells_x(num_x), num_cells_y(num_y), buff_width(num_x + 2),
-      buff_height(num_y + 2), num_threads(num_threads),
+      buff_height(num_y + 2),
       buffer_1(new bool[buff_width * buff_height]),
-      buffer_2(new bool[buff_width * buff_height]), scr(screen) {
+      buffer_2(new bool[buff_width * buff_height]), scr(screen),
+      tp(num_threads), image_number(0) {
   current_state = buffer_1 + buff_width + 1;
   next_state = buffer_2 + buff_width + 1;
   game = GameType::DAY_AND_NIGHT;
@@ -268,8 +267,8 @@ void Game::init_cells(int percent) {
 
 void Game::iterate_slice(int slice) {
   const GameType hoisted_game = game;
-  int start = slice * num_cells_y / num_threads;
-  int end = (slice + 1) * num_cells_y / num_threads;
+  int start = slice * num_cells_y / tp.num_threads;
+  int end = (slice + 1) * num_cells_y / tp.num_threads;
   for (int y = start; y < end; y++) {
     for (int x = 0; x < num_cells_x; ++x) {
       switch (hoisted_game) {
@@ -297,14 +296,10 @@ void Game::iterate_slice(int slice) {
 
 void Game::iterate() {
   set_boundaries();
-  vector<future<void>> futures;
-  futures.reserve(num_threads);
-  for (int i = 0; i < num_threads; ++i) {
-    futures.push_back(async(launch::async, &Game::iterate_slice, this, i));
+  for (int i = 0; i < tp.num_threads; ++i) {
+    tp.submit_job(&Game::iterate_slice, this, i);
   }
-  for (auto &f : futures) {
-    f.get();
-  }
+  tp.wait_for_all_jobs();
   swap(next_state, current_state); // Commit new_state
 }
 
@@ -320,8 +315,8 @@ void Game::draw_cell(int x, int y) {
 }
 
 void Game::draw_slice(int slice) {
-  int start = slice * num_cells_y / num_threads;
-  int end = (slice + 1) * num_cells_y / num_threads;
+  int start = slice * num_cells_y / tp.num_threads;
+  int end = (slice + 1) * num_cells_y / tp.num_threads;
   for (int y = start; y < end; ++y) {
     for (int x = 0; x < num_cells_x; ++x) {
       if (cell_at(x, y)) {
@@ -332,14 +327,10 @@ void Game::draw_slice(int slice) {
 }
 
 void Game::draw_cells() {
-  vector<future<void>> futures;
-  futures.reserve(num_threads);
-  for (int i = 0; i < num_threads; ++i) {
-    futures.push_back(async(launch::async, &Game::draw_slice, this, i));
+  for (int i = 0; i < tp.num_threads; ++i) {
+    tp.submit_job(&Game::draw_slice, this, i);
   }
-  for (auto &f : futures) {
-    f.get();
-  }
+  tp.wait_for_all_jobs();
 }
 
 void Game::switch_game() {

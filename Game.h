@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "Screen.h"
+#include "Threadpool.h"
 
 enum class GameType { CONWAY, SEEDS, GNARL, WALLED_CITIES, DAY_AND_NIGHT };
 enum class BoundaryType { PACMAN, DEAD, ALIVE };
@@ -20,7 +21,6 @@ private:
   const int num_cells_y;
   const int buff_width;
   const int buff_height;
-  const int num_threads;
   bool *const buffer_1;
   bool *const buffer_2;
   bool *current_state;
@@ -30,6 +30,7 @@ private:
   ColorState color_state;
   SDL_Color color;
   PerfSoftScreen *const scr;
+  Threadpool tp;
   bool show_fps;
   int rand_percent;
   bool step;

@@ -7,13 +7,10 @@
 #include <condition_variable>
 #include <mutex>
 #include <functional>
+#include <future>
 
 /*
  * TODO:
- *   - There is no way to get return values of jobs submitted. modifiy 
- *     Threadpool to use futures to get return values
- *   - The threadpool fails when member functions are submitted as jobs.
- *     Determine why this is and fix it.
  *   - If you submit a job that expects a reference argument (e.g. void f(int&))
  *     in order to get correct behavior, the value passed in needs to be
  *     wrapped in std::ref. However, the code will still compile if you don't 
@@ -21,14 +18,14 @@
  */
 class Threadpool {
  public:
-  Threadpool() :
+  explicit Threadpool() :
     running(true),
     num_threads(recommend_threadcount()) {
     running_threads = num_threads;
     start_threads();
   }
 
-  Threadpool(int num_threads) :
+  explicit Threadpool(int num_threads) :
     running(true),
     num_threads(num_threads) {
     if (num_threads <= 0) {
@@ -37,6 +34,10 @@ class Threadpool {
     running_threads = num_threads;
     start_threads();
   }
+
+  Threadpool(Threadpool& other) = delete;
+  Threadpool(const Threadpool& other) = delete;
+  Threadpool(Threadpool&& other) = delete;
 
   // The destructor will cancel any remaining jobs. Make sure to call
   // wait_for_all_jobs() before letting the destructor execute
@@ -47,7 +48,15 @@ class Threadpool {
     }
     signal_threads.notify_all();
     for (auto& thread: threads) {
-      thread.join();
+      if (thread.joinable()) {
+        thread.join();
+      }
+    }
+  }
+
+  void detach_threads() {
+    for (auto& thread: threads) {
+      thread.detach();
     }
   }
 
@@ -55,68 +64,24 @@ class Threadpool {
     return std::thread::hardware_concurrency();
   }
 
-#if 0
-  // My attempt at getting Futures implemented. Ignore for now.
-  template<class F>
-  std::future<typename std::result_of<F()>::type>
-  submit_job(F&& f) {
-    auto p = new std::promise<typename std::result_of<F()>::type>();
-    {
-      std::lock_guard<std::mutex> lk(m);
-      job_queue.emplace_back([p, f]{
-          auto b = f();
-          p->set_value(std::move(b));
-          delete p;
-      });
-    }
-    signal_threads.notify_one();
-    return p->get_future();
-  }
-
-  template<class F, class... Args>
+  template<typename F, typename... Args>
   std::future<typename std::result_of<F(Args...)>::type>
   submit_job(F&& f, Args&&... args) {
-    auto p = new std::promise<typename std::result_of<F(Args...)>::type>();
-    {
-      std::lock_guard<std::mutex> lk(m);
-      job_queue.emplace_back([p, f, args...]{
-          p->set_value(f(args...));
-          delete p;
-      });
-    }
-    signal_threads.notify_one();
-    return p->get_future();
-  }
-#else
-  template<class F>
-  void submit_job(F&& f) {
-    {
-      std::lock_guard<std::mutex> lk(m);
-      job_queue.emplace_back(std::bind(f));
-    }
-    signal_threads.notify_one();
+    typedef typename std::result_of<F(Args...)>::type R;
+    return submit_helper(std::function<R()>(std::bind(std::forward<F>(f),
+                                                      std::forward<Args>(args)...)));
   }
 
-  template<class F, class... Args>
-  void submit_job(F&& f, Args&&... args) {
-    {
-      std::lock_guard<std::mutex> lk(m);
-      job_queue.emplace_back(std::bind(f, args...));
-    }
-    signal_threads.notify_one();
+  template<typename F>
+  std::future<typename std::result_of<F()>::type>
+  submit_job(F&& f) {
+    typedef typename std::result_of<F()>::type R;
+    return submit_helper(std::function<R()>(std::forward<F>(f)));
   }
-#endif
-
-#if 0
-  // My attempt at getting reference arguments handled correctly. Ignore for
-  // now
-  template<class F, class... Args>
-  void submit_job(F&& f, Args&... args) = delete;
-#endif
 
   void wait_for_all_jobs() {
     std::unique_lock<std::mutex> lk(m);
-    signal_main.wait(lk, [&]{
+    signal_main.wait(lk, [&] {
       return job_queue.empty() && running_threads == 0;
     });
   }
@@ -127,9 +92,35 @@ class Threadpool {
   }
 
  private:
+  template <typename R>
+  std::future<R> submit_helper(std::function<R()> func) {
+    auto p = std::make_shared<std::promise<R>>();
+    {
+      std::lock_guard<std::mutex> lk(m);
+      job_queue.emplace_back([p, func] {
+        p->set_value(func());
+      });
+    }
+    signal_threads.notify_one();
+    return p->get_future();
+  }
+
+  std::future<void> submit_helper(std::function<void()> func) {
+    auto p = std::make_shared<std::promise<void>>();
+    {
+      std::lock_guard<std::mutex> lk(m);
+      job_queue.emplace_back([p, func] {
+        func();
+        p->set_value();
+      });
+    }
+    signal_threads.notify_one();
+    return p->get_future();
+  }
+
   void start_threads() {
     for (int i = 0; i < num_threads; i++) {
-      threads.push_back(std::thread(&Threadpool::thread_loop, this));
+      threads.emplace_back(&Threadpool::thread_loop, this);
     }
   }
 
@@ -139,7 +130,7 @@ class Threadpool {
       if (job_queue.empty()) {
         running_threads--;
         signal_main.notify_one();
-        signal_threads.wait(lk,[&]{return !job_queue.empty() || !running;});
+        signal_threads.wait(lk, [&]{return !job_queue.empty() || !running;});
         running_threads++;
         if (!running) {
           break;

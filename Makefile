@@ -21,7 +21,7 @@ all: $(ELFNAME)
 $(ELFNAME): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o$@ $^ $(LDFLAGS) 
 
-$(OBJDIR)/%.o: %.cpp $(OBJDIR)
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c -MMD -MP $< -o $@
 
 $(OBJDIR):

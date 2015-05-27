@@ -297,7 +297,7 @@ void Game::iterate_slice(int slice) {
 void Game::iterate() {
   set_boundaries();
   for (int i = 0; i < tp.num_threads; ++i) {
-    tp.submit_job(&Game::iterate_slice, this, i);
+    tp.submit_task(&Game::iterate_slice, this, i);
   }
   tp.wait_for_all_jobs();
   swap(next_state, current_state); // Commit new_state
@@ -328,7 +328,7 @@ void Game::draw_slice(int slice) {
 
 void Game::draw_cells() {
   for (int i = 0; i < tp.num_threads; ++i) {
-    tp.submit_job(&Game::draw_slice, this, i);
+    tp.submit_task(&Game::draw_slice, this, i);
   }
   tp.wait_for_all_jobs();
 }

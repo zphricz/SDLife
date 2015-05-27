@@ -2,7 +2,7 @@ CXXFLAGS = -std=c++11 -Ofast -Wall -Werror
 LDFLAGS = -lSDL2
 OS = $(shell uname -s)
 SRC = $(wildcard *.cpp)
-HEADERS = $(wildcard *.cpp)
+HEADERS = $(wildcard *.h)
 OBJECTS = $(patsubst %.cpp, $(OBJDIR)/%.o, $(SRC))
 DEPS = $(patsubst %.cpp, $(OBJDIR)/%.d, $(SRC))
 OBJDIR = objs
@@ -13,7 +13,7 @@ ifeq ($(OS), Darwin)
 endif
 ifeq ($(OS), Linux)
 	CXX = g++
-	LDFLAGS = -lpthread
+	LDFLAGS += -Wl,--no-as-needed -lpthread
 endif
 
 all: $(ELFNAME)

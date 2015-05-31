@@ -3,10 +3,10 @@
 
 template <typename T>
 class Singleton {
-public:
+  public:
   static T& instance() {
-      static T inst;
-      return inst;
+    static T inst;
+    return inst;
   }
 };
 

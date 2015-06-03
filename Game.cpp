@@ -574,9 +574,6 @@ void Game::run() {
       iterate();
       change_color(2);
       step = false;
-    } else if (scr->is_direct_draw()) {
-      // Wait for a bit so that the renderer can finish drawing
-      SDL_Delay(2);
     }
     if (fps_counter++ == 10) {
       if (show_fps) {

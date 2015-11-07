@@ -1,4 +1,2 @@
-- Currently 4 threads are spawned on every frame. Create a threadpool to make that
-  better
 - Fix extended_neighbors
 - Add support for rendering text

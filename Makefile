@@ -2,6 +2,7 @@ ELFNAME = life
 SUBMODULES = Threadpool Screen
 OBJDIR = objs
 CXXFLAGS = -std=c++14 -Ofast -Wall -Werror
+CXXFLAGS = -std=c++14 -g -Wall -Werror -fsanitize=address
 LDFLAGS = -lSDL2
 OS = $(shell uname -s)
 SRC = $(wildcard *.cpp)
